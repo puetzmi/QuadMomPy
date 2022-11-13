@@ -1,0 +1,11 @@
+__py*__
+test_moments
+.foam*
+*.png
+*.pyc
+.pytest*
+docs/*.rst
+!docs/index.rst
+docs/_*/*
+log.*
+examples/jcp_466_111363/*/mom.dat

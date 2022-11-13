@@ -1,0 +1,11 @@
+n_dims        1;
+qbmm_type    QMOM;
+qbmm_setup
+{
+    inv_type  Wheeler;
+    inv_setup
+    {
+        rtol 1e-8;
+        eabs 1e-3;
+    }
+}
