@@ -1,0 +1,13 @@
+include *.bib
+include *.txt
+include Dockerfile
+include todo
+recursive-include docs *.bib
+recursive-include docs *.py
+recursive-include docs *.rst
+recursive-include docs Makefile
+recursive-include examples *.dat
+recursive-include examples *.py
+recursive-include examples *.sh
+recursive-include quadmompy *.dat
+recursive-include quadmompy *.py
