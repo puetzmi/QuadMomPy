@@ -313,6 +313,8 @@ good-names=i,
            xi,
            m,
            n,
+           p,
+           q,
            a,
            b,
            w,
@@ -324,7 +326,8 @@ good-names=i,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs=
+good-names-rgxs= A*, 
+                 Ainv*
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
@@ -390,7 +393,7 @@ indent-string='    '
 max-line-length=100
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=4000
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
