@@ -18,7 +18,9 @@
 *************************
 QuadMomPy Python3 library
 *************************
-Library for all sorts of fun with moments, Gaussian quadratures and orthogonal polynomials for the solution of spatially homogeneous population balance equations.
+Library for all sorts of fun with moments, Gaussian quadratures and orthogonal
+polynomials for the solution of spatially homogeneous population balance
+equations.
 
 References
 ----------

@@ -15,16 +15,20 @@
 #
 
 """
-This module contains the RKSSP-methods as well as auxiliary functions to solve the system of moment equations resulting from the one-dimensional Fokker-Planck equation.
+This module contains the RKSSP-methods as well as auxiliary functions to solve
+the system of moment equations resulting from the one-dimensional Fokker-Planck
+equation.
 
 """
-import numpy as np
 from math import sqrt
+import numpy as np
 
-def _adapt_stepsize(y0, y1_h, y1_h2, \
-        h, p, hmax, atol, rtol, fhmin=0.2, fhmax=2., fhsaf=0.9):
+def _adapt_stepsize(y0, y1_h, y1_h2, h, p, hmax, atol, rtol,    #pylint:disable=too-many-arguments,too-many-locals
+                        fhmin=0.2, fhmax=2., fhsaf=0.9):
     """
-    Check solution with respect to given tolerance and adapt time step accordingly, based on step doubling. The step size is calculated as described in [:cite:label:`Hairer_1993`].
+    Check solution with respect to given tolerance and adapt time step
+    accordingly, based on step doubling. The step size is calculated as
+    described in [:cite:label:`Hairer_1993`].
 
     Parameters
     ----------
@@ -89,7 +93,9 @@ def _adapt_stepsize(y0, y1_h, y1_h2, \
 
 def _hermite_quad(N):
     """
-    Compute N nodes and normalized weights of the Gauss-Hermite quadrature from the recurrence coefficients of the Hermite polynomials as described in Ref. [:cite:label:`Gautschi_2004`].
+    Compute N nodes and normalized weights of the Gauss-Hermite quadrature from
+    the recurrence coefficients of the Hermite polynomials as described in Ref.
+    [:cite:label:`Gautschi_2004`].
 
     Parameters
     ----------
@@ -131,7 +137,10 @@ def _hermite_quad(N):
 
 def _normal_moments(nmom, x, w, mu, sigma):
     """
-    Compute the first `nmom` moments of a normal distribution given the nodes and normalized weights of a Gauss-Hermite quadrature. For an exact calculation, `nom/2` nodes and weights must be provided, assuming even `nmom`.
+    Compute the first `nmom` moments of a normal distribution given the nodes
+    and normalized weights of a Gauss-Hermite quadrature. For an exact
+    calculation, `nom/2` nodes and weights must be provided, assuming even
+    `nmom`.
 
     Parameters
     ----------
@@ -144,15 +153,18 @@ def _normal_moments(nmom, x, w, mu, sigma):
     mu : float
         Mu parameter of the normal distribution (corresponds to the mean).
     sigma : float
-        Sigma parameter of the normal distribution (corresponds to the standard deviation).
+        Sigma parameter of the normal distribution (corresponds to the standard
+        deviation).
 
     Returns
     -------
     mom : array
-        The first `nmom` moments of a normal distribution with parameters `mu` and `sigma`.
+        The first `nmom` moments of a normal distribution with parameters `mu`
+        and `sigma`.
 
     """
-    # Transform nodes from standard Hermite weight function to normal PDF with parameters mu and sigma
+    # Transform nodes from standard Hermite weight function to normal PDF with
+    # parameters mu and sigma
     xt = sqrt(2)*sigma*x + mu
 
     # Assemble Vandermonde matrix containing powers of the nodes
@@ -163,9 +175,15 @@ def _normal_moments(nmom, x, w, mu, sigma):
     return mom
 
 
-def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1e-7, rtol=1e-5, fhmin=0.2, fhmax=2., fhsaf=0.9):
+def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100,   #pylint:disable=too-many-arguments
+            atol=1e-7, rtol=1e-5, fhmin=0.2, fhmax=2., fhsaf=0.9):
     """
-    Use RK2SSP scheme, see Ref. [:cite:label:`Shu_1988`], to compute solution to one-dimensional moment equations derived from a Fokker-Planck equation with drift and noise-induced advection and diffusion terms. If the adaptive version is selected, the step size is adjusted using an error estimate based on step douling and Richardson extrapolation, see Ref. [:cite:label:`Hairer_1993`].
+    Use RK2SSP scheme, see Ref. [:cite:label:`Shu_1988`], to compute solution to
+    one-dimensional moment equations derived from a Fokker-Planck equation with
+    drift and noise-induced advection and diffusion terms. If the adaptive
+    version is selected, the step size is adjusted using an error estimate based
+    on step doubling and Richardson extrapolation, see Ref.
+    [:cite:label:`Hairer_1993`].
 
     Parameters
     ----------
@@ -182,7 +200,8 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
     tspan : array
         Start and end times.
     inv : callable
-        Inversion algorithm taking a set of univariate moments and returning a quadrature.
+        Inversion algorithm taking a set of univariate moments and returning a
+        quadrature.
     adaptive : bool, optional
         Specifies if adaptive step size control is used, false by default.
     dtmax : float, optional
@@ -192,11 +211,14 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
     rtol : float, optional
         Relative tolerance (only for adaptive step size control).
     fhmin : float, optional
-        Minimum factor for calculation of the new step size (only for adaptive step size control).
+        Minimum factor for calculation of the new step size (only for adaptive
+        step size control).
     fhmax : float, optional
-        Maximum factor for calculation of the new step size (only for adaptive step size control).
+        Maximum factor for calculation of the new step size (only for adaptive
+        step size control).
     fhsaf : float, optional
-        Safety factor for new step size to avoid excessive function evaluations (only for adaptive step size control).
+        Safety factor for new step size to avoid excessive function evaluations
+        (only for adaptive step size control).
 
     Returns
     -------
@@ -249,10 +271,12 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
             m_dt = 0.5*(m + m_)
 
             # Finish step if step size is not adaptive
-            if not adaptive: break
+            if not adaptive:
+                break
 
-            # Now compute two steps with step size dt/2
-            # (For the sake of simplicity, the drift and advection terms at time t are computed again)
+            # Now compute two steps with step size dt/2 (For the sake of
+            # simplicity, the drift and advection terms at time t are computed
+            # again)
             dt2 = 0.5*dt
             m_dt2 = m.copy()
             for _ in range(2):
@@ -272,14 +296,17 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
                 # Compute average
                 m_dt2 = 0.5*(m_dt2 + m_)
 
-            # Check if solution is within tolerance and compute new step size as described in Ref. [Hairer_1993]
-            dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2, dtmax, atol, rtol, fhmin, fhmax, fhsaf)
+            # Check if solution is within tolerance and compute new step size as
+            # described in Ref. [Hairer_1993]
+            dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2, dtmax,
+                                            atol, rtol, fhmin, fhmax, fhsaf)
 
         # Assign updated solution
         m = m_dt.copy()
 
         # Progress in time
-        if t == tspan[-1]: break
+        if t == tspan[-1]:
+            break
         dt = min(dt, dtmax, tspan[-1] - t)
         t += dt
 
@@ -290,9 +317,14 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
     return mom_all, t_all
 
 
-def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1e-7, rtol=1e-5, fhmin=0.2, fhmax=2., fhsaf=0.9):
+def rk2ssp_ar(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100,    #pylint:disable=too-many-arguments
+                atol=1e-7, rtol=1e-5, fhmin=0.2, fhmax=2., fhsaf=0.9):
     """
-    Use RK2SSP scheme, see Ref. [:cite:label:`Shu_1988`], to compute solution to one-dimensional moment equations derived from a Fokker-Planck equation with drift and noise-induced advection and diffusion terms. If the adaptive version is selected, the step size is adjusted using an error estimate based on step douling and Richardson extrapolation, see Ref. [:cite:label:`Hairer_1993`].
+    Use absolutely realizable RK2SSP scheme, see [:cite:label:`Puetz_2022`], a
+    realizability-preserving modification of the normal RK2SSP (see method
+    :meth:`rk2ssp`) to compute solution to one-dimensional moment equations
+    derived from a Fokker-Planck equation with drift and noise-induced advection
+    and diffusion terms.
 
     Parameters
     ----------
@@ -309,7 +341,8 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
     tspan : array
         Start and end times.
     inv : callable
-        Inversion algorithm taking a set of univariate moments and returning a quadrature.
+        Inversion algorithm taking a set of univariate moments and returning a
+        quadrature.
     adaptive : bool, optional
         Specifies if adaptive step size control is used, false by default.
     dtmax : float, optional
@@ -319,138 +352,14 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1
     rtol : float, optional
         Relative tolerance (only for adaptive step size control).
     fhmin : float, optional
-        Minimum factor for calculation of the new step size (only for adaptive step size control).
+        Minimum factor for calculation of the new step size (only for adaptive
+        step size control).
     fhmax : float, optional
-        Maximum factor for calculation of the new step size (only for adaptive step size control).
+        Maximum factor for calculation of the new step size (only for adaptive
+        step size control).
     fhsaf : float, optional
-        Safety factor for new step size to avoid excessive function evaluations (only for adaptive step size control).
-
-    Returns
-    -------
-    mom_all : List
-        Moment sequences for all time steps.
-    t_all : List
-        Time values for all time steps.
-
-    References
-    ----------
-        +---------------+---------------------+
-        | [Shu_1988]    | :cite:`Shu_1988`    |
-        +---------------+---------------------+
-        | [Hairer_1993] | :cite:`Hairer_1993` |
-        +---------------+---------------------+
-
-    """
-    m = mom
-    t = tspan[0]
-    _2N = len(m)
-
-    # Initialize lists containing all times and moment sets
-    t_all = []
-    mom_all = []
-
-    # Initialize arrays for advection and diffusion terms
-    mdot_adv_drift = np.zeros(_2N)
-    mdot_adv_noise = np.zeros(_2N)
-    mdot_diff = np.zeros(_2N)
-
-    # Start time integration
-    while t <= tspan[-1]:
-        success = False
-
-        while not success:
-            # RK2SSP-step with step size dt
-            m_ = m.copy()
-            # Compute intermediate moments
-            for _ in range(2):
-                # Moment inversion
-                v, w = inv(m_)
-                v[np.isclose(v, 0)] = 0.
-                # Compute advection and diffusion terms
-                mdot_adv_drift[1:] = [k*a(v)*v**(k-1)@w for k in range(1,_2N)]
-                mdot_adv_noise[1:] = [k*b(v)*v**(k-1)@w for k in range(1,_2N)]
-                mdot_diff[2:] = [0.5*k*(k-1)*sigma(v)**2*v**(k-2)@w for k in range(2,_2N)]
-                # Update moments
-                m_ += dt*(mdot_adv_drift + mdot_adv_noise + mdot_diff)
-            # Compute average
-            m_dt = 0.5*(m + m_)
-
-            # Finish step if step size is not adaptive
-            if not adaptive: break
-
-            # Now compute two steps with step size dt/2
-            # (For the sake of simplicity, the drift and advection terms at time t are computed again)
-            dt2 = 0.5*dt
-            m_dt2 = m.copy()
-            for _ in range(2):
-                # RK2SSP-step with step size dt/2
-                m_ = m_dt2.copy()
-                # Compute intermediate moments
-                for _ in range(2):
-                    # Moment inversion
-                    v, w = inv(m_)
-                    v[np.isclose(v, 0)] = 0.
-                    # Compute advection and diffusion terms
-                    mdot_adv_drift[1:] = [k*a(v)*v**(k-1)@w for k in range(1,_2N)]
-                    mdot_adv_noise[1:] = [k*b(v)*v**(k-1)@w for k in range(1,_2N)]
-                    mdot_diff[2:] = [0.5*k*(k-1)*sigma(v)**2*v**(k-2)@w for k in range(2,_2N)]
-                    # Update moments
-                    m_ += dt2*(mdot_adv_drift + mdot_adv_noise + mdot_diff)
-                # Compute average
-                m_dt2 = 0.5*(m_dt2 + m_)
-
-            # Check if solution is within tolerance and compute new step size as described in Ref. [Hairer_1993]
-            dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2, dtmax, atol, rtol, fhmin, fhmax, fhsaf)
-
-        # Assign updated solution
-        m = m_dt.copy()
-
-        # Progress in time
-        if t == tspan[-1]: break
-        dt = min(dt, dtmax, tspan[-1] - t)
-        t += dt
-
-        # Append current solution and time
-        mom_all.append(m.copy())
-        t_all.append(t)
-
-    return mom_all, t_all
-
-
-def rk2ssp_ar(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, atol=1e-7, rtol=1e-5, fhmin=0.2, fhmax=2., fhsaf=0.9):
-    """
-    Use absolutely realizable RK2SSP scheme, see [:cite:label:`Puetz_2022`], a realizability-preserving modification of the normal RK2SSP (see method :meth:`rk2ssp`) to compute solution to one-dimensional moment equations derived from a Fokker-Planck equation with drift and noise-induced advection and diffusion terms.
-
-    Parameters
-    ----------
-    mom : array
-        Valid sequence of initial moments.
-    a : callable
-        Drift function.
-    b : callable
-        Noise-induced drift function.
-    sigma : callable
-        Noise function.
-    dt : float
-        Time step size (may change if 'adaptive' is true.
-    tspan : array
-        Start and end times.
-    inv : callable
-        Inversion algorithm taking a set of univariate moments and returning a quadrature.
-    adaptive : bool, optional
-        Specifies if adaptive step size control is used, false by default.
-    dtmax : float, optional
-        Maximum step size
-    atol : float, optional
-        Absolute tolerance (only for adaptive step size control).
-    rtol : float, optional
-        Relative tolerance (only for adaptive step size control).
-    fhmin : float, optional
-        Minimum factor for calculation of the new step size (only for adaptive step size control).
-    fhmax : float, optional
-        Maximum factor for calculation of the new step size (only for adaptive step size control).
-    fhsaf : float, optional
-        Safety factor for new step size to avoid excessive function evaluations (only for adaptive step size control).
+        Safety factor for new step size to avoid excessive function evaluations
+        (only for adaptive step size control).
 
     Returns
     -------
@@ -507,10 +416,12 @@ def rk2ssp_ar(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, ato
             m_dt = 0.5*(m + m_)
 
             # Finish step if step size is not adaptive
-            if not adaptive: break
+            if not adaptive:
+                break
 
-            # Now compute two steps with step size dt/2
-            # (For the sake of simplicity, the drift and advection terms at time t are computed again)
+            # Now compute two steps with step size dt/2 (For the sake of
+            # simplicity, the drift and advection terms at time t are computed
+            # again)
             dt2 = 0.5*dt
             m_dt2 = m.copy()
             for _ in range(2):
@@ -532,14 +443,17 @@ def rk2ssp_ar(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100, ato
                 # Compute average
                 m_dt2 = 0.5*(m_dt2 + m_)
 
-            # Check if solution is within tolerance and compute new step size as described in Ref. [Hairer_1993]
-            dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2, dtmax, atol, rtol, fhmin, fhmax, fhsaf)
+            # Check if solution is within tolerance and compute new step size as
+            # described in Ref. [Hairer_1993]
+            dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2,
+                                            dtmax, atol, rtol, fhmin, fhmax, fhsaf)
 
         # Assign updated solution
         m = m_dt.copy()
 
         # Progress in time
-        if t == tspan[-1]: break
+        if t == tspan[-1]:
+            break
         dt = min(dt, dtmax, tspan[-1] - t)
         t += dt
 
