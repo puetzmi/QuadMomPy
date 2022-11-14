@@ -15,7 +15,8 @@
 #
 
 """
-QuadMomPy subpackage for the solution of specific equations, e.g. population balance equations, with QBMMs.
+QuadMomPy subpackage for the solution of specific equations, e.g. population
+balance equations, with QBMMs.
 
 """
 from . import integrate_1d
