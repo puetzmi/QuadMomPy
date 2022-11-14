@@ -83,9 +83,9 @@ disable=raw-checker-failed,
         locally-disabled,
         file-ignored,
         suppressed-message,
-        #useless-suppression,
         deprecated-pragma,
-        use-symbolic-message-instead
+        use-symbolic-message-instead,
+        too-many-instance-attributes     # this is just annoying
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -326,8 +326,8 @@ good-names=i,
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
-good-names-rgxs= A*, 
-                 Ainv*
+good-names-rgxs=A*?,
+                Ainv*?
 
 # Include a hint for the correct naming format with invalid-name.
 include-naming-hint=no
