@@ -18,8 +18,8 @@
 Quadrature (both univariate and multivariate) data structures required by several QBMMs.
 
 """
-import numpy as np
 import abc
+import numpy as np
 
 
 class Quadrature(metaclass=abc.ABCMeta):
@@ -58,11 +58,6 @@ class Quadrature(metaclass=abc.ABCMeta):
         self.n_nodes = n_nodes
         self.n_dims = n_dims
 
-    @classmethod
-    @abc.abstractmethod
-    def empty(cls, *args):
-        pass
-
     def __getitem__(self, node_idx):
         nodes = self.xi[node_idx]
         weight = self.w[node_idx]
@@ -78,7 +73,8 @@ class Quadrature(metaclass=abc.ABCMeta):
         order : int
             The moment order.
         factor : array or float, optional
-            Additional factor such as a source term. If it is an array, it must have a shape consistent with `xi`.
+            Additional factor such as a source term. If it is an array, it must
+            have a shape consistent with `xi`.
 
         Returns
         -------
@@ -86,7 +82,6 @@ class Quadrature(metaclass=abc.ABCMeta):
             Reconstructed moments of order `order`.
 
         """
-        pass
 
     def reconstruct_all(self, max_order, factor=1):
         """
@@ -97,7 +92,8 @@ class Quadrature(metaclass=abc.ABCMeta):
         max_order : int or sequence of ints
             The maximum moment order in each dimension.
         factor : array or float, optional
-            Additional factor such as a source term. If it is an array, it must have a shape consistent with xi.
+            Additional factor such as a source term. If it is an array, it must
+            have a shape consistent with xi.
 
         Returns
         -------
@@ -123,13 +119,12 @@ class OneDQuadrature(Quadrature):
         1D-array with quadrature weights.
 
     """
-    def __init__(self, xi, w):
-        super().__init__(xi, w)
 
     @classmethod
     def empty(cls, n_nodes):
         """
-        Create a OneDQuadrature instance. Arrays for nodes and weights are allocated but not initialized.
+        Create a OneDQuadrature instance. Arrays for nodes and weights are
+        allocated but not initialized.
 
         Parameters
         ----------
@@ -146,7 +141,7 @@ class OneDQuadrature(Quadrature):
         w = np.empty(n_nodes)
         return cls(xi, w)
 
-    def reconstruct(self, moment_order, factor=1):
+    def reconstruct(self, order, factor=1):
         return (factor*self.xi**order)@self.w
 
     def __iter__(self):
@@ -160,18 +155,18 @@ class NDQuadrature(Quadrature):
     Parameters
     ----------
     xi : array
-        Quadrature nodes of shape `(n_nodes, n_dims)` representing `n_nodes` `n_dims`-dimensional vectors.
+        Quadrature nodes of shape `(n_nodes, n_dims)` representing `n_nodes`
+        `n_dims`-dimensional vectors.
     w : array
         Quadrature weights of shape `(n_nodes,)`.
 
     """
-    def __init__(self, xi, w):
-        super().__init__(xi, w)
 
     @classmethod
     def empty(cls, n_nodes, n_dims):
         """
-        Create an `NDQuadrature` instance. Arrays for nodes and weights are allocated but not initialized.
+        Create an `NDQuadrature` instance. Arrays for nodes and weights are
+        allocated but not initialized.
 
         Parameters
         ----------
@@ -183,21 +178,23 @@ class NDQuadrature(Quadrature):
         Returns
         -------
         quadrature : NDQuadrature
-            An `NDQuadrature` object with `n_nodes` nodes and `n_dims` dimensions.
+            An `NDQuadrature` object with `n_nodes` nodes and `n_dims`
+            dimensions.
 
         """
         xi = np.empty((n_nodes, n_dims))
         w = np.empty(n_nodes)
         return cls(xi, w)
 
-    def reconstruct(self, moment_order, factor=1):
-        k = np.array(moment_order)
+    def reconstruct(self, order, factor=1):
+        k = np.array(order)
         return (factor*np.prod(self.xi**k, axis=-1))@self.w
 
 
 class _CondBaseStruct:
     """
-    Data structure to store the conditional quadrature. Contains a list of arrays with shape (N1,N2,..,Nd) in the dth dimension.
+    Data structure to store the conditional quadrature. Contains a list of
+    arrays with shape (N1,N2,..,Nd) in the dth dimension.
 
     Parameters
     ----------
@@ -218,7 +215,8 @@ class _CondBaseStruct:
         Parameters
         ----------
         idx : int or sequence of ints.
-            Index of the element(s). The first int is the dimension, the following indices refer to nodes.
+            Index of the element(s). The first int is the dimension, the
+            following indices refer to nodes.
 
         Return
         ------
@@ -227,22 +225,20 @@ class _CondBaseStruct:
 
         Examples
         --------
-        Structure with 3, 2 and 2 nodes in the first, second and third dimension, respectively:
-        >>> nodes = _CondBaseStruct((3, 2, 2))
+        Structure with 3, 2 and 2 nodes in the first, second and third
+        dimension, respectively: >>> nodes = _CondBaseStruct((3, 2, 2))
 
-        Set nodes in the first dimension:
-        >>> nodes[0] = np.array([0.1, 0.5, 0.6])
+        Set nodes in the first dimension: >>> nodes[0] = np.array([0.1, 0.5,
+        0.6])
 
-        Set 3x2 nodes in the second dimension:
-        >>> nodes[1] = np.array([[1, 2], [3, 4], [5, 6]])
+        Set 3x2 nodes in the second dimension: >>> nodes[1] = np.array([[1, 2],
+        [3, 4], [5, 6]])
 
-        Get both nodes in the second dimension (1) at the third node (3) in the first dimension:
-        >>> nodes[1,2]
-        [3. 3.]
+        Get both nodes in the second dimension (1) at the third node (3) in the
+        first dimension: >>> nodes[1,2] [3. 3.]
 
-        ... or only the second node (1) in the second dimension (1) at first node (0) in the first dimension:
-        >>> nodes[1,0,1]
-        2.
+        ... or only the second node (1) in the second dimension (1) at first
+        node (0) in the first dimension: >>> nodes[1,0,1] 2.
 
         """
         try:
@@ -259,27 +255,25 @@ class _CondBaseStruct:
         Parameters
         ----------
         idx : int or sequence of ints.
-            Index of the element(s). The first int is the dimension, the following indices refer to nodes.
+            Index of the element(s). The first int is the dimension, the
+            following indices refer to nodes.
         val : array or float
-            New value(s) of the element(s) at the given index. The shape must be consistent with the shape in the given dimension.
+            New value(s) of the element(s) at the given index. The shape must be
+            consistent with the shape in the given dimension.
 
         Examples
         --------
-        Structure with 3, 2 and 2 nodes in the first, second and third dimension, respectively:
-        >>> nodes = _CondBaseStruct((3, 2, 2))
+        Structure with 3, 2 and 2 nodes in the first, second and third
+        dimension, respectively: >>> nodes = _CondBaseStruct((3, 2, 2))
 
-        Set nodes in the first dimension:
-        >>> nodes[0] = np.array([0.1, 0.5, 0.6])
+        Set nodes in the first dimension: >>> nodes[0] = np.array([0.1, 0.5,
+        0.6])
 
-        Set 3x2 nodes in the second dimension:
-        >>> nodes[1] = np.array([[1, 2], [3, 4], [5, 6]])
+        Set 3x2 nodes in the second dimension: >>> nodes[1] = np.array([[1, 2],
+        [3, 4], [5, 6]])
 
-        Set only one element:
-        >>> nodes[1,2,0] = 0.
-        >>> nodes[1]
-        [[1. 2.]
-         [3. 4.]
-         [0. 6.]]
+        Set only one element: >>> nodes[1,2,0] = 0. >>> nodes[1] [[1. 2.]
+         [3. 4.] [0. 6.]]
 
         """
         try:
@@ -293,18 +287,19 @@ class _CondBaseStruct:
 
 class ConditionalQuadrature(NDQuadrature):
     """
-    N-dimensional quadrature required for the conditional quadrature method of moments (CQMOM) [:cite:label:`Yuan_2011`].
+    N-dimensional quadrature required for the conditional quadrature method of
+    moments (CQMOM) [:cite:label:`Yuan_2011`].
 
     Parameters
     ----------
     xi : array
-        Quadrature nodes of shape `(n_nodes, n_dims)`, where `n_nodes` is the product of all elements in `n_nodes_per_dim`.
+        Quadrature nodes of shape `(n_nodes, n_dims)`, where `n_nodes` is the
+        product of all elements in `n_nodes_per_dim`.
     w : array
-        Quadrature weights of shape `(n_nodes,)`, where `n_nodes` is the product of all elements in `n_nodes_per_dim`.
+        Quadrature weights of shape `(n_nodes,)`, where `n_nodes` is the product
+        of all elements in `n_nodes_per_dim`.
     n_nodes_per_dim : sequence of ints
         Number of nodes in each dimension.
-    init_cond : bool, optional
-        If True, the conditional quadrature is updated during instantiation based on `xi` and `w`. Default is `True`.
 
     Attributes
     ----------
@@ -322,16 +317,18 @@ class ConditionalQuadrature(NDQuadrature):
         +-------------+-------------------+
 
     """
-    def __init__(self, xi, w, n_nodes_per_dim, init_cond=True):
+    def __init__(self, xi, w, n_nodes_per_dim):
         super().__init__(xi, w)
         self.n_nodes_per_dim = n_nodes_per_dim
         self.xi_cond = _CondBaseStruct(n_nodes_per_dim)
         self.w_cond = _CondBaseStruct(n_nodes_per_dim)
 
     @classmethod
-    def empty(cls, n_nodes_per_dim):
+    def empty(cls, n_nodes_per_dim):    # pylint:disable=arguments-differ
         """
-        Create an instance of `ConditionalQuadrature`. Arrays for nodes and weights are allocated but not properly initialized. So are data structures for the conditional quadrature.
+        Create an instance of `ConditionalQuadrature`. Arrays for nodes and
+        weights are allocated but not properly initialized. So are data
+        structures for the conditional quadrature.
 
         Parameters
         ----------
@@ -341,18 +338,21 @@ class ConditionalQuadrature(NDQuadrature):
         Returns
         -------
         quadrature : ConditionalQuadrature
-            A `ConditionalQuadrature` object with `n_nodes` nodes and `n_dims` dimensions.
+            A `ConditionalQuadrature` object with `n_nodes` nodes and `n_dims`
+            dimensions.
 
         """
         n_nodes = np.prod(n_nodes_per_dim)
         n_dims = len(n_nodes_per_dim)
         xi = np.empty((n_nodes, n_dims))
         w = np.empty(n_nodes)
-        return cls(xi, w, n_nodes_per_dim, init_cond=False)
+        return cls(xi, w, n_nodes_per_dim)
 
     def update(self):
         """
-        Update the general multivariate quadrature from the conditional quadrature. This method must be called explicitly after updating the conditional quadrature, e.g. after a moment inversion.
+        Update the general multivariate quadrature from the conditional
+        quadrature. This method must be called explicitly after updating the
+        conditional quadrature, e.g. after a moment inversion.
 
         """
         self.w[:,] = 1.

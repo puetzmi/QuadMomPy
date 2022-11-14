@@ -205,7 +205,7 @@ class ConditionalQmom(MultivariateQbmm):
                         for d_ in dims_m2:
                             cmom[d_], r, _, _ = np.linalg.lstsq(A[d_[start:]], cmom[d_], rcond=None)
                     else:
-                        cmom, r, _, _ = np.linalg.lstsq(A, cmom, rcond=None)
+                        cmom = np.linalg.lstsq(A, cmom, rcond=None)[0]
                 d += 1
 
             # With the conditional moments, compute quadrare for each previously computed node

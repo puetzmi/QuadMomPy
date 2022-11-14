@@ -26,26 +26,34 @@ class Wheeler(MomentInversion):
     """
     Wheeler moment inversion algorithm.
 
-    Compute Gaussian quadrature given a set of moments using the Wheeler algorithm proposed by Sack and Donovan [:cite:label:`Sack_1971`) and Wheeler [:cite:label:`Wheeler_1974`]. A set of 2N moments is needed to compute an N-node quadrature.
+    Compute Gaussian quadrature given a set of moments using the Wheeler
+    algorithm proposed by Sack and Donovan [:cite:label:`Sack_1971`) and Wheeler
+    [:cite:label:`Wheeler_1974`]. A set of 2N moments is needed to compute an
+    N-node quadrature.
 
     Parameters
     ----------
     cutoff : float
-        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered zero, which means that the moment sequence is located on the moment space boundary and the quadrature nodes are truncated.
+        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered
+        zero, which means that the moment sequence is located on the moment
+        space boundary and the quadrature nodes are truncated.
     kwargs :
         See base class `MomentInversion`.
 
     Attributes
     ----------
     sigma : array
-        Stored matrix used to compute recursion coefficients of orthogonal polynomials.
+        Stored matrix used to compute recursion coefficients of orthogonal
+        polynomials.
     cutoff : float
-        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered zero, which means that the moment sequence is located on the moment space boundary and the quadrature nodes are truncated.
+        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered
+        zero, which means that the moment sequence is located on the moment
+        space boundary and the quadrature nodes are truncated.
 
     Notes
     -----
-    Several implementations were tested including NumPy routines. Given only
-    a few moments (< 20), this implementation proved to be the most efficient.
+    Several implementations were tested including NumPy routines. Given only a
+    few moments (< 20), this implementation proved to be the most efficient.
 
     References
     ----------
@@ -61,14 +69,15 @@ class Wheeler(MomentInversion):
         self.cutoff = cutoff
         self.sigma = np.array([])
 
-    def _compute_rc(self, moments, n, iodd, alpha, beta):
-        nmom = len(moments)
+    def _compute_rc(self, mom, n, iodd, alpha, beta): # pylint:disable=too-many-arguments
+        nmom = len(mom)
         self.sigma = np.zeros((n+1, nmom+1))
-        self.sigma[1,1:] = moments
+        self.sigma[1,1:] = mom
         for i in range(2, n+1):
             jmax = 2*n + 2 - i - iodd
             for j in range(i, jmax):
-                self.sigma[i,j] = self.sigma[i-1,j+1]-alpha[i-2]*self.sigma[i-1,j]-beta[i-2]*self.sigma[i-2,j]
+                self.sigma[i,j] = self.sigma[i-1,j+1]-alpha[i-2]*self.sigma[i-1,j] \
+                    - beta[i-2]*self.sigma[i-2,j]
             if abs(self.sigma[i,i]) < self.cutoff:
                 break
             alpha[i-1] = self.sigma[i,i+1]/self.sigma[i,i]-self.sigma[i-1,i]/self.sigma[i-1,i-1]
@@ -77,9 +86,15 @@ class Wheeler(MomentInversion):
 
 class WheelerAdaptive(Wheeler):
     """
-    Wheeler moment inversion algorithm with adaptive reduction of quadrature nodes.
+    Wheeler moment inversion algorithm with adaptive reduction of quadrature
+    nodes.
 
-    Compute Gaussian quadrature given a set of moments using the Wheeler algorithm proposed by Sack and Donovan [:cite:label:`Sack_1971`] and Wheeler [:cite:label:`Wheeler_1974`]. A set of 2N moments is needed to compute an N-node quadrature. The adaptive modification of the Wheeler algorithm [:cite:label:`Marchisio_2013`] dynamically reduces the number nodes to increase numerical stability.
+    Compute Gaussian quadrature given a set of moments using the Wheeler
+    algorithm proposed by Sack and Donovan [:cite:label:`Sack_1971`] and Wheeler
+    [:cite:label:`Wheeler_1974`]. A set of 2N moments is needed to compute an
+    N-node quadrature. The adaptive modification of the Wheeler algorithm
+    [:cite:label:`Marchisio_2013`] dynamically reduces the number nodes to
+    increase numerical stability.
 
     Parameters
     ----------
@@ -93,7 +108,9 @@ class WheelerAdaptive(Wheeler):
     Attributes
     ----------
     cutoff : float
-        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered zero, which means that the moment sequence is located on the moment space boundary and the quadrature nodes are truncated.
+        Threshold for sigma-matrix. If sigma[k,k] < cutoff, it is considered
+        zero, which means that the moment sequence is located on the moment
+        space boundary and the quadrature nodes are truncated.
     rmin : float
         Tolerance for weight-ratio criterion.
     ebs : float
@@ -111,9 +128,7 @@ class WheelerAdaptive(Wheeler):
 
     """
     def __init__(self, rmin=1e-8, eabs=1e-8, **kwargs):
-        super().__init__(**kwargs)
-        self.rmin = rmin
-        self.eabs = eabs
+        super().__init__(rmin=rmin, eabs=eabs, **kwargs)
 
-    def moment_inversion(self, moments):
-        return self._moment_inversion_ad(moments)
+    def moment_inversion(self, mom):
+        return self._moment_inversion_ad(mom)

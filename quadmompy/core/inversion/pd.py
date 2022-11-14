@@ -25,7 +25,8 @@ class ProductDifference(MomentInversion):
     """
     Product-difference moment inversion algorithm [:cite:label:`Gordon_1968`].
 
-    Compute Gaussian quadrature given a set of moments using the product-difference (PD) algorithm [:cite:label:`Gordon_1968`].
+    Compute Gaussian quadrature given a set of moments using the
+    product-difference (PD) algorithm [:cite:label:`Gordon_1968`].
 
     Parameters
     ----------
@@ -35,12 +36,13 @@ class ProductDifference(MomentInversion):
     Attributes
     ----------
     zeta : array
-        Stored continued-fraction coefficients computed during calculation of recursion coefficients.
+        Stored continued-fraction coefficients computed during calculation of
+        recursion coefficients.
 
     Notes
     -----
-    Several implementations were tested including NumPy routines. Given only
-    a few moments (< 20), this implementation proved to be the most efficient.
+    Several implementations were tested including NumPy routines. Given only a
+    few moments (< 20), this implementation proved to be the most efficient.
 
     References
     ----------
@@ -53,11 +55,11 @@ class ProductDifference(MomentInversion):
         super().__init__(**kwargs)
         self.zeta = np.array([])
 
-    def _compute_rc(self, moments, n, iodd, alpha, beta):
+    def _compute_rc(self, mom, n, iodd, alpha, beta):   # pylint:disable=too-many-arguments
         size = 2*n + 1 - iodd
         p_mat = np.zeros((size, size))
         p_mat[0,0] = 1.
-        p_mat[:-1,1] = moments
+        p_mat[:-1,1] = mom
         p_mat[::2] *= -1
 
         for j in range(2, size):
@@ -73,9 +75,14 @@ class ProductDifference(MomentInversion):
 
 class ProductDifferenceAdaptive(ProductDifference):
     """
-    Product-difference moment inversion algorithm [:cite:label:`Gordon_1968`] (adaptive version).
+    Product-difference moment inversion algorithm [:cite:label:`Gordon_1968`]
+    (adaptive version).
 
-    Compute Gaussian quadrature given a set of moments using the product-difference (PD) algorithm [:cite:label:`Gordon_1968`]. This adaptive modification uses the same criteria as the adaptive Wheeler algorithm [:cite:label:`Marchisio_2013`] to dynamically reduce the number nodes for increased numerical stability.
+    Compute Gaussian quadrature given a set of moments using the
+    product-difference (PD) algorithm [:cite:label:`Gordon_1968`]. This adaptive
+    modification uses the same criteria as the adaptive Wheeler algorithm
+    [:cite:label:`Marchisio_2013`] to dynamically reduce the number nodes for
+    increased numerical stability.
 
     Parameters
     ----------
@@ -103,9 +110,7 @@ class ProductDifferenceAdaptive(ProductDifference):
 
     """
     def __init__(self, rmin=1e-8, eabs=1e-8, **kwargs):
-        super().__init__(**kwargs)
-        self.rmin = rmin
-        self.eabs = eabs
+        super().__init__(rmin=rmin, eabs=eabs, **kwargs)
 
-    def moment_inversion(self, moments):
-        return self._moment_inversion_ad(moments)
+    def moment_inversion(self, mom):
+        return self._moment_inversion_ad(mom)

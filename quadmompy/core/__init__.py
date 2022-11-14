@@ -17,7 +17,9 @@
 """
 QuadMomPy Core
 --------------
-QuadMoM-Core subpackage. Includes basic IO-operations, data types and fundamental computations involving moments, Hankel matrices, Gaussian quadratures and orthogonal polynomials required by QBMMs and other subpackages.
+QuadMoM-Core subpackage. Includes basic IO-operations, data types and
+fundamental computations involving moments, Hankel matrices, Gaussian
+quadratures and orthogonal polynomials required by QBMMs and other subpackages.
 
 """
 

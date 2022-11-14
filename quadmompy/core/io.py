@@ -18,8 +18,9 @@
 Module for input/output operations concerning moment sets and setup files.
 
 """
-import numpy as np
 import re
+from ast import literal_eval
+import numpy as np
 
 
 def read_moment_set(filename):
@@ -48,11 +49,11 @@ def read_moment_set(filename):
     # If NumPy-function did not work, read file line by line and parse
     # multidimensional indices and corresponging values
     dct = {}
-    with open(filename, 'r') as fi:
+    with open(filename, 'r', encoding='UTF-8') as fi:
         lines = fi.readlines()
         for line in lines: # read by index and value
             elmts = line.split()
-            key = eval(''.join(elmts[:-1]))
+            key = literal_eval(''.join(elmts[:-1]))
             val = float(elmts[-1])
             dct[key] = val
     nmom = tuple(max(dim) + 1 for dim in zip(*dct.keys()))
@@ -65,8 +66,10 @@ def read_moment_set(filename):
 
 def write_moment_set(filename, mom, fmt='%.18e'):
     """
-    Write set of moments (or any n-dimensional NumPy array) from a text file. Output is in
-    array-format (1D and 2D) or in case of higher dimensionality `(i,j,k,...)  m[i,j,k,...]`, where `(i,j,k,...)` is the moment order in terms of a tuple of integers and `m[i,j,k,...]` the respective moment value.
+    Write set of moments (or any n-dimensional NumPy array) from a text file.
+    Output is in array-format (1D and 2D) or in case of higher dimensionality
+    `(i,j,k,...)  m[i,j,k,...]`, where `(i,j,k,...)` is the moment order in
+    terms of a tuple of integers and `m[i,j,k,...]` the respective moment value.
 
     Parameters
     ----------
@@ -82,15 +85,15 @@ def write_moment_set(filename, mom, fmt='%.18e'):
         np.savetxt(filename, mom, fmt=fmt)
     else:
         fmt = fmt[1:]
-        with open(filename, 'w+') as fo:
+        with open(filename, 'w+', encoding='UTF-8') as fo:
             indices = np.ndindex(mom.shape)
             lines = []
             for idx in indices:
-                lines.append("{0!s} {1:{2:s}}\n".format(idx, mom[idx], fmt))
+                lines.append(f"{idx} {mom[idx]:{fmt}}\n")
             fo.writelines(lines)
 
 
-def _convert_numbers_deep(data):
+def _convert_numbers_deep(data): # pylint:disable=too-many-return-statements
     """
     Convert all strings in a nested data structure to floats or ints if possible.
 
@@ -118,7 +121,7 @@ def _convert_numbers_deep(data):
     if isinstance(data, list):
         return [_convert_numbers_deep(val) for val in data]
     if isinstance(data, tuple):
-        return tuple([_convert_numbers_deep(val) for val in data])
+        return tuple(_convert_numbers_deep(val) for val in data)
     return data
 
 
@@ -137,12 +140,12 @@ def parse_setup(filename):
         in the setup file).
 
     """
-    with open(filename, 'r') as fin:
+    with open(filename, 'r', encoding='UTF-8') as fin:
         setup = fin.read()
 
     # first try to read Python-dictionary directly from input file (recommended type of input)
     try:
-        setup = eval(setup)
+        setup = literal_eval(setup)
 
     # if that fails, parse input file in OpenFOAM-dictionary-like syntax
     except SyntaxError:
@@ -161,7 +164,7 @@ def parse_setup(filename):
         setup = setup.replace(';', ',')
 
         # `setup` should now have proper Python-dictionary syntax
-        setup = eval(setup)
+        setup = literal_eval(setup)
         # convert all 'numeric strings' to numeric types
         setup = _convert_numbers_deep(setup)
 

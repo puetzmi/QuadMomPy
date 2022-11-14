@@ -15,54 +15,79 @@
 #
 
 """
-This module contains the basic moment inversion class that all the specific inversion algorithms are derived from.
+This module contains the basic moment inversion class that all the specific
+inversion algorithms are derived from.
 
 """
-import numpy as np
 import abc
+import numpy as np
 from quadmompy.core import utils
 
 
 class MomentInversion(metaclass=abc.ABCMeta):
     """
-    Base class of moment inversion algorithms used to instantiate a selected subclass.
+    Base class of moment inversion algorithms used to instantiate a selected
+    subclass.
 
-    This class is the base class for algorithms to compute Gaussian quadratures from moment sequences. It also serves as an interface to dynamically create instances of subclasses specified by name in a given setup dictionary.
+    This class is the base class for algorithms to compute Gaussian quadratures
+    from moment sequences. It also serves as an interface to dynamically create
+    instances of subclasses specified by name in a given setup dictionary.
 
     Parameters
     ----------
     radau : bool, optional
-        Indicates if Gauss-Radau-quadrature (one fixed quadrature node) is to be computed. Default is `False`. If `radau==True`, the parameter `radau_node` must be provided as well.
+        Indicates if Gauss-Radau-quadrature (one fixed quadrature node) is to be
+        computed. Default is `False`. If `radau==True`, the parameter
+        `radau_node` must be provided as well.
     radau_node : float, optional
-        Location of the fixed node of a Gauss-Radau quadrature (necessary if `radau==True`)
+        Location of the fixed node of a Gauss-Radau quadrature (necessary if
+        `radau==True`)
     lobatto : bool, optional
-        Indicates if Gauss-Lobatto-quadrature (two fixed quadrature nodes) is to be computed. Default is `False`. If `lobatto==True`, the parameter `lobatto_nodes` must be provided as well.
+        Indicates if Gauss-Lobatto-quadrature (two fixed quadrature nodes) is to
+        be computed. Default is `False`. If `lobatto==True`, the parameter
+        `lobatto_nodes` must be provided as well.
     lobatto_nodes : array_like, optional
-        Locations of the two fixed quadrature nodes of a Gauss-lobatto quadrature (necessary if `lobatto==True`)
+        Locations of the two fixed quadrature nodes of a Gauss-lobatto
+        quadrature (necessary if `lobatto==True`)
     beta_tol : float
-        Specifies the value below which the absolute value of a recurrence coefficient `beta` is considered to be zero.
+        Specifies the value below which the absolute value of a recurrence
+        coefficient `beta` is considered to be zero.
 
     Attributes
     ----------
     radau : bool, optional
-        Indicates if Gauss-Radau-quadrature (one fixed quadrature node) is to be computed. Default is `False`. If `radau==True`, the parameter `radau_node` must be provided as well.
+        Indicates if Gauss-Radau-quadrature (one fixed quadrature node) is to be
+        computed. Default is `False`. If `radau==True`, the parameter
+        `radau_node` must be provided as well.
     radau_node : float, optional
-        Location of the fixed node of a Gauss-Radau quadrature (necessary if `radau==True`)
+        Location of the fixed node of a Gauss-Radau quadrature (necessary if
+        `radau==True`)
     lobatto : bool, optional
-        Indicates if Gauss-Lobatto-quadrature (two fixed quadrature nodes) is to be computed. Default is `False`. If `lobatto==True`, the parameter `lobatto_nodes` must be provided as well.
+        Indicates if Gauss-Lobatto-quadrature (two fixed quadrature nodes) is to
+        be computed. Default is `False`. If `lobatto==True`, the parameter
+        `lobatto_nodes` must be provided as well.
     lobatto_nodes : array_like, optional
-        Locations of the two fixed quadrature nodes of a Gauss-lobatto quadrature (necessary if `lobatto==True`)
+        Locations of the two fixed quadrature nodes of a Gauss-lobatto
+        quadrature (necessary if `lobatto==True`)
     beta_tol : float
-        Specifies the value below which the absolute value of a recurrence coefficient `beta` is considered to be zero.
+        Specifies the value below which the absolute value of a recurrence
+        coefficient `beta` is considered to be zero.
+    rmin : float
+        Tolerance for weight-ratio criterion (only for adaptive algorithms).
+    ebs : float
+        Tolerance for node-distance criterion (only for adaptive algorithms).
 
     """
-    def __init__(self, radau=False, radau_node=None, \
-            lobatto=False, lobatto_nodes=None, beta_tol=1e-12, **kwargs):
+    def __init__(self, radau=False, radau_node=None, # pylint:disable=unused-argument,too-many-arguments
+            lobatto=False, lobatto_nodes=None, beta_tol=1e-12, rmin=None, eabs=None,
+            **kwargs):
         self.radau = radau
         self.radau_node = radau_node
         self.lobatto = lobatto
         self.lobatto_nodes = lobatto_nodes
         self. beta_tol = beta_tol
+        self.rmin = rmin
+        self.eabs = eabs
         if self.radau and self.lobatto:
             msg = "Conflicting parameters: Only one of `radau` and `lobatto` may be true."
             raise ValueError(msg)
@@ -70,12 +95,14 @@ class MomentInversion(metaclass=abc.ABCMeta):
     @classmethod
     def get_all_algorithms(cls):
         """
-        Get list of all available inversion algorithms, i.e. all subclasses in the entire class hierarchy.
+        Get list of all available inversion algorithms, i.e. all subclasses in
+        the entire class hierarchy.
 
         Returns
         -------
         all_subclasses : list
-            List of all types inheriting directly or indirectly from `MomentInversion`.
+            List of all types inheriting directly or indirectly from
+            `MomentInversion`.
 
         """
         return utils.get_all_subclasses(cls)
@@ -102,16 +129,19 @@ class MomentInversion(metaclass=abc.ABCMeta):
         """
         algorithms = {scls.__name__: scls for scls in cls.get_all_algorithms()}
         if not name in algorithms.keys():
-            err_message = "Unknown moment inversion algorithm '" + name + "'. Available algorithms: " + str([key for key in algorithms])
+            err_message = f"Unknown moment inversion algorithm '{name}'. Available algorithms: " \
+                f"{list(algorithms.keys())}"
             raise ValueError(err_message)
         if name.find('Adaptive') == - 1 and adaptive:
             return algorithms[name + 'Adaptive'](**kwargs)
         return algorithms[name](**kwargs)
 
     @abc.abstractmethod
-    def _compute_rc(self, mom, n, iodd, alpha, beta):
+    def _compute_rc(self, mom, n, iodd, alpha, beta):   # pylint:disable=too-many-arguments
         """
-        Compute recurrence coefficients of orthogonal polynomials associated with a given set of moments and assign them directly to the input arrays `alpha` and `beta`.
+        Compute recurrence coefficients of orthogonal polynomials associated
+        with a given set of moments and assign them directly to the input arrays
+        `alpha` and `beta`.
 
         Parameters
         ----------
@@ -120,18 +150,21 @@ class MomentInversion(metaclass=abc.ABCMeta):
         n : int
             Number of recurrence coefficients to be computed.
         iodd : int
-            Integer that takes the value 0 if the number of moments is even and 1 if it is odd.
+            Integer that takes the value 0 if the number of moments is even and
+            1 if it is odd.
         alpha : array
-            Array to store the first set of recurrence coefficients that satisfies `len(alpha) >= n`.
+            Array to store the first set of recurrence coefficients that
+            satisfies `len(alpha) >= n`.
         beta : array
-            Array to store the second set of recurrence coefficients that satisfies `len(beta) >= n`.
+            Array to store the second set of recurrence coefficients that
+            satisfies `len(beta) >= n`.
 
         """
-        pass
 
     def recurrence_coeffs(self, mom):
         """
-        Compute recurrence coefficients of orthogonal polynomials corresponding to a given set of moments.
+        Compute recurrence coefficients of orthogonal polynomials corresponding
+        to a given set of moments.
 
         Parameters
         ----------
@@ -163,7 +196,7 @@ class MomentInversion(metaclass=abc.ABCMeta):
             return self._radau_correct(alpha, beta)
 
         n = nmax - 1 + iodd
-        self._compute_rc(mom, nmax-1+iodd, iodd, alpha[:nmax-1+iodd], beta[:nmax-1+iodd])
+        self._compute_rc(mom, n, iodd, alpha[:n], beta[:n])
 
         # Recurrence coefficients corresponding to Gauss-Lobatto quadrature if needed
         if self.lobatto:
@@ -173,9 +206,12 @@ class MomentInversion(metaclass=abc.ABCMeta):
         return alpha[:-1], beta[:nmax-1+iodd]
 
 
-    def quad_from_rc(self, alpha, beta):
+    @staticmethod
+    def quad_from_rc(alpha, beta):
         """
-        Compute Gaussian quadrature abscissas and weights from recurrence coefficients of orthogonal polynomials, see e.g. [:cite:label:`Gautschi_2004`].
+        Compute Gaussian quadrature abscissas and weights from recurrence
+        coefficients of orthogonal polynomials, see e.g.
+        [:cite:label:`Gautschi_2004`].
 
         Parameters
         ----------
@@ -217,25 +253,28 @@ class MomentInversion(metaclass=abc.ABCMeta):
         Parameters
         ----------
         mom : array
-            Set of realizable moments. Depending on the setup, not all moments might be used.
+            Set of realizable moments. Depending on the setup, not all moments
+            might be used.
 
         Returns
         -------
         xi : array
-            Abscissae of the quadrature of the specified type (Gauss, Gauss-Radau, ...) corresponding to the given set of moments.
+            Abscissae of the quadrature of the specified type (Gauss,
+            Gauss-Radau, ...) corresponding to the given set of moments.
         w : array
-            Weights of the quadrature of the specified type (Gauss, Gauss-Radau, ...) corresponding to the given set of moments.
+            Weights of the quadrature of the specified type (Gauss, Gauss-Radau,
+            ...) corresponding to the given set of moments.
 
         """
-        n_mom = len(mom)
-        a, b = self.recurrence_coeffs(mom)
-        b[abs(b) < self.beta_tol] = 0.
-        xi, w = self.quad_from_rc(a, b)
+        alpha, beta = self.recurrence_coeffs(mom)
+        beta[abs(beta) < self.beta_tol] = 0.
+        xi, w = self.quad_from_rc(alpha, beta)
         return xi, w
 
     def _moment_inversion_ad(self, mom):
         """
-        Moment inversion using adaptive procedure based on node-distance and weight-ratio criteria, called internally by adaptive algorithms.
+        Moment inversion using adaptive procedure based on node-distance and
+        weight-ratio criteria, called internally by adaptive algorithms.
 
         Parameters
         ----------
@@ -289,19 +328,23 @@ class MomentInversion(metaclass=abc.ABCMeta):
 
     def __call__(self, mom):
         """
-        Computation of Gaussian quadrature from a given moment set, see method :meth:'moment_inversion' for more details.
+        Computation of Gaussian quadrature from a given moment set, see method
+        :meth:'moment_inversion' for more details.
 
         """
         return self.moment_inversion(mom)
 
     def _radau_correct(self, alpha, beta):
         """
-        Correct recurrence coefficient :math:`\\alpha_{n-1}` for Gauss-Radau quadrature according to Ref. [:cite:label:`Gautschi_2004`].
+        Correct recurrence coefficient :math:`\\alpha_{n-1}` for Gauss-Radau
+        quadrature according to Ref. [:cite:label:`Gautschi_2004`].
 
         Parameters
         ----------
         alpha : array
-            First set of recurrence coefficients of which the (n-1)th element is modified for Gauss-Radau quadrature. If len(alpha) < n, the array is extended with the computed coefficient.
+            First set of recurrence coefficients of which the (n-1)th element is
+            modified for Gauss-Radau quadrature. If len(alpha) < n, the array is
+            extended with the computed coefficient.
         beta : array
             Second set of recurrence coefficient that remains unchanged.
 
@@ -340,16 +383,24 @@ class MomentInversion(metaclass=abc.ABCMeta):
 
     def _lobatto_correct(self, alpha, beta, extend=False):
         """
-        Correct (or append) (n-1)th recurrence coefficients :math:`\\alpha_{n-1}` and :math:`\\beta_{n-1}` for Gauss-Lobatto quadrature according to Ref. [:cite:label:`Gautschi_2004`].
+        Correct (or append) (n-1)th recurrence coefficients
+        :math:`\\alpha_{n-1}` and :math:`\\beta_{n-1}` for Gauss-Lobatto
+        quadrature according to Ref. [:cite:label:`Gautschi_2004`].
 
         Parameters
         ----------
         alpha : array
-            First set of recurrence coefficients of which the (n-1)th element is modified for Gauss-Lobatto quadrature. If len(alpha) < n, the array is extended with the computed coefficient.
+            First set of recurrence coefficients of which the (n-1)th element is
+            modified for Gauss-Lobatto quadrature. If len(alpha) < n, the array
+            is extended with the computed coefficient.
         beta : array
-            Second set of recurrence coefficients of which the (n-1)th element is modified for Gauss-Lobatto quadrature. If len(beta) < n, the array is extended with the computed coefficient.
+            Second set of recurrence coefficients of which the (n-1)th element
+            is modified for Gauss-Lobatto quadrature. If len(beta) < n, the
+            array is extended with the computed coefficient.
         extend : bool, optional
-            If `True`, the modified Lobatto-recurrence coefficients are appended to alpha and beta. Otherwise, the last element is overwritten. The default value is `False`.
+            If `True`, the modified Lobatto-recurrence coefficients are appended
+            to alpha and beta. Otherwise, the last element is overwritten. The
+            default value is `False`.
 
         Returns
         -------
@@ -374,22 +425,22 @@ class MomentInversion(metaclass=abc.ABCMeta):
         # Compute orthogonal polynomials associated with given recurrence
         # coefficients evaluated at Lobatto-nodes, to obtain the linear
         # system in (3.1.28), Ref. [Gautschi_2004]
-        At = np.zeros((2,2))
+        coeffs_transposed = np.zeros((2,2))
         # References to matrix rows for readability
-        p_k = At[1]
-        p_kp1 = At[0]
+        p_k = coeffs_transposed[1]
+        p_kp1 = coeffs_transposed[0]
         p_kp1[:] = 1.
         p_km1 = np.zeros_like(p_k)
-        ab = self.lobatto_nodes
+        a_b = self.lobatto_nodes
         #for k in range(n-1):
         for k in range(n-1):
             for j in range(2):
                 p_km1[j] = p_k[j]
                 p_k[j] = p_kp1[j]
-                p_kp1[j] = (ab[j] - alpha[k])*p_k[j] - beta[k]*p_km1[j]
+                p_kp1[j] = (a_b[j] - alpha[k])*p_k[j] - beta[k]*p_km1[j]
 
         # Correct recurrence coefficients, see Eq. (3.1.28) in Ref. [Gautschi_2004]
-        alpha[-1], beta[-1] = np.linalg.solve(At.T, ab*At[0])
+        alpha[-1], beta[-1] = np.linalg.solve(coeffs_transposed.T, a_b*coeffs_transposed[0])
 
         return alpha, beta
 

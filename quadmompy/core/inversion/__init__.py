@@ -15,7 +15,8 @@
 #
 
 """
-This QuadMoM-subpackage contains the basic moment inversion procedures required by quadrature-based moment methods.
+This QuadMoM-subpackage contains the basic moment inversion procedures required
+by quadrature-based moment methods.
 
 """
 from quadmompy.core.inversion.basic import *

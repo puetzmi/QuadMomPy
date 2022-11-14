@@ -22,42 +22,52 @@ import numpy as np
 import scipy.linalg as la
 
 
-def hankel_matrix(mom, kind='lower', inplace=False, A=None):
+def hankel_matrix(mom, kind='lower', inplace=False, matrix=None):
     """
-    Make Hankel matrix given the moment sequence `mom`. If the number of moments in `mom` is even (`len(mom)==2*n`) then two different moment matrices may be assembled: (1) The lower Hankel matrix containing the moments of order 0 to 2n-2 or (2) the upper Hankel matrix with moments of orders 1 to 2n-1. If the number of moments in `mom` is odd the Hankel matrix is unique.
+    Make Hankel matrix given the moment sequence `mom`. If the number of moments
+    in `mom` is even (`len(mom)==2*n`) then two different moment matrices may be
+    assembled: (1) The lower Hankel matrix containing the moments of order 0 to
+    2n-2 or (2) the upper Hankel matrix with moments of orders 1 to 2n-1. If the
+    number of moments in `mom` is odd the Hankel matrix is unique.
 
     Parameters
     ----------
     mom : array_like
         Moment sequence.
     kind : str, optional
-        Specification of Hankel matrix type as explained in the description above; may take the values `lower` or `upper`. If len(m) is odd the choice of `kind` does not have any effect.
+        Specification of Hankel matrix type as explained in the description
+        above; may take the values `lower` or `upper`. If len(m) is odd the
+        choice of `kind` does not have any effect.
     inplace : bool, optional
-        Indicates if the function operates directly on a given matrix `A`, which must be provided as additional parameter if `inplace==True`. Default is False.
-    A : array, optional
+        Indicates if the function operates directly on a given matrix `A`, which
+        must be provided as additional parameter if `inplace==True`. Default is
+        False.
+    matrix : array, optional
         Array to store the Hankel matrix, only necessary if `inplace==True`.
 
     Returns
     -------
-    H : array_like
+    hankel : array_like
         Hankel matrix.
 
     """
-    nm = len(mom)
-    size = nm//2 + nm % 2
+    nmom = len(mom)
+    size = nmom//2 + nmom % 2
     if inplace:
-        H = A
+        hankel = matrix
     else:
-        H = np.zeros((size, size))
-    if kind == 'lower' or nm % 2 == 1:
+        hankel = np.zeros((size, size))
+    if kind == 'lower' or nmom % 2 == 1:
         k = 0
     elif kind == 'upper':
         k = 1
     else:
-        raise ValueError("Invalid value of parameter `kind`, which must take either the value `upper` or `lower`.")
+        msg = "Invalid value of parameter `kind`, which must take either " \
+            "the value `upper` or `lower`."
+        raise ValueError(msg)
     for i in range(size):
-        H[i] = mom[k+i:size+k+i]
-    return H
+        hankel[i] = mom[k+i:size+k+i]
+    return hankel
 
 
 def hankel_det(mom, kind='lower'):
@@ -69,7 +79,9 @@ def hankel_det(mom, kind='lower'):
     mom : array_like
         Moment sequence.
     kind : str, optional
-        Specification of Hankel matrix type, see `hankel_matrix`; may take the values `lower` or `upper`. If `len(m)` is odd the choice of `kind` does not have any effect.
+        Specification of Hankel matrix type, see `hankel_matrix`; may take the
+        values `lower` or `upper`. If `len(m)` is odd the choice of `kind` does
+        not have any effect.
 
     Returns
     -------
@@ -77,13 +89,15 @@ def hankel_det(mom, kind='lower'):
         Hankel determinant.
 
     """
-    H = hankel_matrix(mom, kind)
-    return np.linalg.det(H)
+    hankel = hankel_matrix(mom, kind)
+    return np.linalg.det(hankel)
 
 
 class HankelMatrix:
     """
-    Class for Hankel-type moment matrices. Direct calls to the constructor are discouraged. Instantiation should occur by calling the `from_moments`-method.
+    Class for Hankel-type moment matrices. Direct calls to the constructor are
+    discouraged. Instantiation should occur by calling the
+    `from_moments`-method.
 
     Parameters
     ----------
@@ -95,11 +109,14 @@ class HankelMatrix:
     Attributes
     ----------
     _data : array
-        2D-array representing the Hankel moment matrix. Direct manipulation leads to inconsistencies and is thus not recommended.
+        2D-array representing the Hankel moment matrix. Direct manipulation
+        leads to inconsistencies and is thus not recommended.
     _det : float
-        Determinant of the Hankel-matrix. It is only computed when it is required the first time.
+        Determinant of the Hankel-matrix. It is only computed when it is
+        required the first time.
     _chol : array
-        2D-array representing the upper right triangular matrix resulting from a Cholesky-decomposition.
+        2D-array representing the upper right triangular matrix resulting from a
+        Cholesky-decomposition.
     shape : tuple
         Hankel matrix dimensions, i.e. shape of the underlying numpy array.
 
@@ -115,26 +132,37 @@ class HankelMatrix:
     @classmethod
     def from_moments(cls, mom, kind='lower', check_pd=False):
         """
-        Initialize Hankel matrix from a set of moments. The entries are determined by the number of moments and the `kind`-parameter.
+        Initialize Hankel matrix from a set of moments. The entries are
+        determined by the number of moments and the `kind`-parameter.
 
         Parameters
         ----------
         mom : array
-            Set of moments. If `len(mom)` is even, the resulting Hankel-matrix depends on the parameter `kind`.
+            Set of moments. If `len(mom)` is even, the resulting Hankel-matrix
+            depends on the parameter `kind`.
         kind : str, optional
-            Kind of Hankel moment matrix, must be either 'lower' (default) or 'upper'. If the number of given moments, say n, is even and kind=='lower', the moments m[0]...m[n-2] are used to assemble the Hankel matrix. If kind=='upper', the Hankel matrix conatains the moments m[1]...m[n-1]. In cases where the number of moments is odd, the choice of `kind` has no effect.
+            Kind of Hankel moment matrix, must be either 'lower' (default) or
+            'upper'. If the number of given moments, say n, is even and
+            kind=='lower', the moments m[0]...m[n-2] are used to assemble the
+            Hankel matrix. If kind=='upper', the Hankel matrix conatains the
+            moments m[1]...m[n-1]. In cases where the number of moments is odd,
+            the choice of `kind` has no effect.
         check_pd : bool, optional
-            Indicates if positive definiteness of the Hankel matrix is to be checked. The default value is `False`.
+            Indicates if positive definiteness of the Hankel matrix is to be
+            checked. The default value is `False`.
 
         """
         valid_kinds = ['lower', 'upper']
         if kind not in valid_kinds:
-            raise ValueError("Got invalid parameter kind={0!s}; must be '{1:s}' or '{2:s}'.".format(kind, *valid_kinds))
+            msg = "Got invalid parameter kind={0!s}; must be " \
+                "'{1:s}' or '{2:s}'.".format(kind, *valid_kinds)
+            raise ValueError(msg)
         return HankelMatrix(hankel_matrix(mom, kind), check_pd)
 
     def det(self):
         """
-        Determinant of the Hankel moment matrix. If not yet assigned, a Cholesky decomposition is used for computation.
+        Determinant of the Hankel moment matrix. If not yet assigned, a Cholesky
+        decomposition is used for computation.
 
         Returns
         -------
@@ -148,19 +176,22 @@ class HankelMatrix:
 
     def chol(self):
         """
-        The upper right triangular matrix resulting from the Cholesky decomposition of the stored Hankel matrix.
+        The upper right triangular matrix resulting from the Cholesky
+        decomposition of the stored Hankel matrix.
 
         Returns
         -------
         chol : array
-            2D-array representing the upper right triangular matrix resulting from a Cholesky-decomposition.
+            2D-array representing the upper right triangular matrix resulting
+            from a Cholesky-decomposition.
 
         """
         if self._chol is None:
             try:
                 self._chol = la.cholesky(self._data, check_finite=False)
-            except np.linalg.LinAlgError as e:
-                raise ValueError("The given matrix is not positive definite: \n (LinAlgError) {0!s}.".format(e))
+            except np.linalg.LinAlgError as err:
+                msg = "The given matrix is not positive definite."
+                raise ValueError(msg) from err
         return self._chol
 
     def matrix(self):
@@ -177,22 +208,28 @@ class HankelMatrix:
 
     def update(self, mom, kind, check_pd):
         """
-        Update Hankel matrix with given moments. The given moments are presumed to be consistent with `self.shape`.
+        Update Hankel matrix with given moments. The given moments are presumed
+        to be consistent with `self.shape`.
 
         Parameters
         ----------
         mom : array
-            Set of moments. If `len(mom)` is even, the resulting Hankel-matrix depends on the parameter `kind`.
+            Set of moments. If `len(mom)` is even, the resulting Hankel-matrix
+            depends on the parameter `kind`.
         kind : str, optional
-            Kind of Hankel moment matrix, must be either 'lower' (default) or 'upper', see `HankelMatrix.from_moments`.
+            Kind of Hankel moment matrix, must be either 'lower' (default) or
+            'upper', see `HankelMatrix.from_moments`.
         check_pd : bool, optional
-            Indicates if positive definiteness of the Hankel matrix is to be checked. The default value is `False`.
+            Indicates if positive definiteness of the Hankel matrix is to be
+            checked. The default value is `False`.
 
         """
         valid_kinds = ['lower', 'upper']
         if kind not in valid_kinds:
-            raise ValueError("Got invalid parameter kind={0!s}; must be '{1:s}' or '{2:s}'.".format(kind, *valid_kinds))
-        hankel_matrix(mom, kind=kind, inplace=True, A=self._data)
+            msg = "Got invalid parameter kind={0!s}; must be " \
+                "'{1:s}' or '{2:s}'.".format(kind, *valid_kinds)
+            raise ValueError(msg)
+        hankel_matrix(mom, kind=kind, inplace=True, matrix=self._data)
         self._det = None
         self._chol = None
         if check_pd:
@@ -203,13 +240,13 @@ class HankelMatrix:
         Return copy of this object.
 
         """
-        c  = HankelMatrix(self._data.copy(), check_pd=False)
+        hankel_matrix_copy  = HankelMatrix(self._data.copy(), check_pd=False)
         if self._chol is not None:
-            c._chol = self._chol.copy()
+            hankel_matrix_copy._chol = self._chol.copy()    # pylint:disable=protected-access
         else:
-            c._chol = None
-        c._det = self._det
-        return c
+            hankel_matrix_copy._chol = None                 # pylint:disable=protected-access
+        hankel_matrix_copy._det = self._det                 # pylint:disable=protected-access
+        return hankel_matrix_copy
 
 
 
@@ -251,4 +288,3 @@ class HankelMatrix:
 
         """
         return self._data[idx]
-
