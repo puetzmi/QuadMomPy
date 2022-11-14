@@ -13,17 +13,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+This module contains the improved EQMOM root finding algorithms based on moment
+realizbility proposed by Pigou et al. [:cite:label:`Pigou_2018`].
 
 """
-This module contains the improved EQMOM root finding algorithms based on moment realizbility proposed by Pigou et al. [:cite:label:`Pigou_2018`].
 
-"""
+# The algorithms implemented as described in the original paper by Pigou et al.
+# and they are accompanied by comments with references to that paper and using
+# similar variable names. So division into smaller units or expressive variable
+# naming is not possible/reasonable here:
+# pylint:disable=invalid-name,too-many-locals,too-many-statements,too-many-arguments,too-many-branches
+
 import numpy as np
 from quadmompy.moments.transform import rc2canonmom, rc2zeta, zeta2rc
 
-def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_output=False, maxiter=100):
+def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m,
+                    inv, atol, rtol, full_output=False, maxiter=100):
     """
-    The moment-realizability-based root finding algorithm for a Hamburger problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in Section 3.3).
+    The moment-realizability-based root finding algorithm for a Hamburger
+    problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in
+    Section 3.3).
 
     Parameters
     ----------
@@ -32,11 +42,20 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     sigma_range : tuple
         Interval of valid sigma values.
     mom : (2*N + 1,) array
-        Set of 2*N + 1 realizable moments, where N is the number of KDFs in EQMOM.
+        Set of 2*N + 1 realizable moments, where N is the number of KDFs in
+        EQMOM.
     m2ms : callable
-        Function that converts ordinary moments m to degenerated moments m*, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m, sigma)``, where `m` are the ordinary moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts ordinary moments m to degenerated moments m*, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m,
+        sigma)``, where `m` are the ordinary moments and `sigma` is the current
+        EQMOM-parameter (float).
     ms2m : callable
-        Function that converts degenerated moments m* to ordinary moments m, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms, sigma)``, where `ms` are the degenerated moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts degenerated moments m* to ordinary moments m, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms,
+        sigma)``, where `ms` are the degenerated moments and `sigma` is the
+        current EQMOM-parameter (float).
     inv : MomentInversion
         Object of subtype of `MomentInversion`.
     atol : float
@@ -44,9 +63,11 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     rtol : float
         Allowed relative error determining termination of the root search.
     full_output : bool, optional
-        If true, the function additionally returns a dictionary containing intermediate values.
+        If true, the function additionally returns a dictionary containing
+        intermediate values.
     maxiter : int, optional
-        Maximum number of iterations. When exceeded, the algorithm is terminated with a `RuntimeError` (default: 100).
+        Maximum number of iterations. When exceeded, the algorithm is terminated
+        with a `RuntimeError` (default: 100).
 
     Returns
     -------
@@ -57,12 +78,14 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     w_first : array
         Weights of the first quadrature
     results : dict, optional
-        Dictionary with additional details such as intermediate values and convergence information (returned if full_output is true).
+        Dictionary with additional details such as intermediate values and
+        convergence information (returned if full_output is true).
 
     Raises
     ------
     RuntimeError
-        If moments are not realizable or if the algorithm has not converged after `maxiter` iterations.
+        If moments are not realizable or if the algorithm has not converged
+        after `maxiter` iterations.
 
     References
     ----------
@@ -98,9 +121,7 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     # (1) Check realizability of the moment set
     realizable = np.all(b0 >= 0.)
     if not realizable:
-        msg = "Moment set is not realizable.\n"
-        msg += "m = {0!s}\n".format(m)
-        msg += "b = {0!s}".format(b0)
+        msg = f"Moment set is not realizable.\nm = {m}\nb = {b0}"
         raise RuntimeError(msg)
 
     # (2) Initialize interval
@@ -122,7 +143,8 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
                 sigma['r'][k] = sigma['r'][k-1]
                 success = True
                 break
-            return pigou_hamburger(sigma0, sigma_range, m[:-2], m2ms, ms2m, rc_func, atol, rtol, full_output, maxiter)
+            return pigou_hamburger(sigma0, sigma_range, m[:-2], m2ms, ms2m,
+                                    rc_func, atol, rtol, full_output, maxiter)
 
         # (3b) Compute sigma[t1] and b*(sigma[t1])
         sigma['t1'][k] = 0.5*(sigma['l'][k-1] + sigma['r'][k-1])
@@ -152,27 +174,32 @@ def pigou_hamburger(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
         # Compute error assuming the worst case and terminate procedure if criteria are met
         eabs_max = sigma['r'][k] - sigma['l'][k]
         success = eabs_max < (atol + rtol*sigma['l'][k])
-        if success: break
+        if success:
+            break
 
     # Raise error if algorithm has failed to converge after `maxiter` iterations
     if not success:
-        err_msg = "Maximum number of iterations ({0:d}) exceeded.\n".format(maxiter)
-        err_msg += "Current sigma interval: ({0:8.7e}, {0:8.7e})".format(sigma['l'][k-1], sigma['r'][k-1])
-        raise RuntimeError(err_msg)
+        msg = f"Maximum number of iterations ({maxiter}) exceeded.\n" \
+            f"Current sigma interval: ({sigma['l'][k-1]:8.7e}, {sigma['r'][k-1]:8.7e})"
+        raise RuntimeError(msg)
 
     nit = k
     xi, w = inv(m2ms(m[:-1], sigma['l'][k]))
     if full_output:
-        results = {'sigma_{0:s}'.format(key): np.array([sigma[key][i] for i in range(nit)]) for key in ['l','r']}
+        results = {f"sigma_{key}": np.array([sigma[key][i] for i
+                        in range(nit)]) for key in ['l','r']}
         results['nit'] = nit
         return sigma['l'][k], xi, w
 
     return sigma['l'][k], xi, w
 
 
-def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_output=False, maxiter=100):
+def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m,
+                    inv, atol, rtol, full_output=False, maxiter=100):
     """
-    The moment-realizability-based root finding algorithm for a Stieltjes problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in Section 3.4).
+    The moment-realizability-based root finding algorithm for a Stieltjes
+    problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in
+    Section 3.4).
 
     Parameters
     ----------
@@ -181,11 +208,20 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     sigma_range : tuple
         Interval of valid sigma values.
     mom : (2*N + 1,) array
-        Set of 2*N + 1 realizable moments, where N is the number of KDFs in EQMOM.
+        Set of 2*N + 1 realizable moments, where N is the number of KDFs in
+        EQMOM.
     m2ms : callable
-        Function that converts ordinary moments m to degenerated moments m*, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m, sigma)``, where `m` are the ordinary moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts ordinary moments m to degenerated moments m*, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m,
+        sigma)``, where `m` are the ordinary moments and `sigma` is the current
+        EQMOM-parameter (float).
     ms2m : callable
-        Function that converts degenerated moments m* to ordinary moments m, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms, sigma)``, where `ms` are the degenerated moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts degenerated moments m* to ordinary moments m, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms,
+        sigma)``, where `ms` are the degenerated moments and `sigma` is the
+        current EQMOM-parameter (float).
     inv : MomentInversion
         Object of subtype of `MomentInversion`.
     atol : float
@@ -193,9 +229,11 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     rtol : float
         Allowed relative error determining termination of the root search.
     full_output : bool, optional
-        If true, the function additionally returns a dictionary containing intermediate values.
+        If true, the function additionally returns a dictionary containing
+        intermediate values.
     maxiter : int, optional
-        Maximum number of iterations. When exceeded, the algorithm is terminated with a `RuntimeError` (default: 100).
+        Maximum number of iterations. When exceeded, the algorithm is terminated
+        with a `RuntimeError` (default: 100).
 
     Returns
     -------
@@ -206,12 +244,14 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     w_first : array
         Weights of the first quadrature
     results : dict, optional
-        Dictionary with additional details such as intermediate values and convergence information (returned if full_output is true).
+        Dictionary with additional details such as intermediate values and
+        convergence information (returned if full_output is true).
 
     Raises
     ------
     RuntimeError
-        If moments are not realizable or if the algorithm has not converged after `maxiter` iterations.
+        If moments are not realizable or if the algorithm has not converged
+        after `maxiter` iterations.
 
     References
     ----------
@@ -247,9 +287,7 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     # (1) Check realizability of the moment set
     realizable = np.all(zeta0 >= 0.)
     if not realizable:
-        msg = "Moment set is not realizable.\n"
-        msg += "m = {0!s}\n".format(m)
-        msg += "zeta = {0!s}".format(zeta0)
+        msg = f"Moment set is not realizable.\nm = {m}\nzeta = {zeta0}"
         raise RuntimeError(msg)
 
     # (2) Initialize interval
@@ -271,7 +309,8 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
                 sigma['r'][k] = sigma['r'][k-1]
                 success = True
                 break
-            return pigou_stieltjes(sigma0, sigma_range, m[:-2], m2ms, ms2m, inv, atol, rtol, full_output, maxiter)
+            return pigou_stieltjes(sigma0, sigma_range, m[:-2], m2ms, ms2m,
+                                    inv, atol, rtol, full_output, maxiter)
 
         # (3b) Compute sigma[t1] and zeta*(sigma[t1])
         sigma['t1'][k] = 0.5*(sigma['l'][k-1] + sigma['r'][k-1])
@@ -301,18 +340,20 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
         # Compute error assuming the worst case and terminate procedure if criteria are met
         eabs_max = sigma['r'][k] - sigma['l'][k]
         success = eabs_max < (atol + rtol*sigma['l'][k])
-        if success: break
+        if success:
+            break
 
     # Raise error if algorithm has failed to converge after `maxiter` iterations
     if not success:
-        err_msg = "Maximum number of iterations ({0:d}) exceeded.\n".format(maxiter)
-        err_msg += "Current sigma interval: ({0:8.7e}, {0:8.7e})".format(sigma['l'][k-1], sigma['r'][k-1])
-        raise RuntimeError(err_msg)
+        msg = f"Maximum number of iterations ({maxiter}) exceeded.\n" \
+            f"Current sigma interval: ({sigma['l'][k-1]:8.7e}, {sigma['r'][k-1]:8.7e})"
+        raise RuntimeError(msg)
 
     nit = k
     xi, w = inv(m2ms(m[:-1], sigma['l'][k]))
     if full_output:
-        results = {'sigma_{0:s}'.format(key): np.array([sigma[key][i] for i in range(nit)]) for key in ['l','r']}
+        results = {f"sigma_{key}": np.array([sigma[key][i] for i
+                        in range(nit)]) for key in ['l','r']}
         results['nit'] = nit
         return sigma['l'][k], xi, w
 
@@ -320,9 +361,12 @@ def pigou_stieltjes(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
 
 
 # TODO: Make this more robust
-def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_output=False, maxiter=100):
+def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv,
+                        atol, rtol, full_output=False, maxiter=100):
     """
-    The moment-realizability-based root finding algorithm for a Hausdorff problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in Section 3.5).
+    The moment-realizability-based root finding algorithm for a Hausdorff
+    problem proposed by Pigou et al. [:cite:label:`Pigou_2018`] (algorithm in
+    Section 3.5).
 
     Parameters
     ----------
@@ -331,11 +375,20 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     sigma_range : tuple
         Interval of valid sigma values.
     mom : (2*N + 1,) array
-        Set of 2*N + 1 realizable moments, where N is the number of KDFs in EQMOM.
+        Set of 2*N + 1 realizable moments, where N is the number of KDFs in
+        EQMOM.
     m2ms : callable
-        Function that converts ordinary moments m to degenerated moments m*, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m, sigma)``, where `m` are the ordinary moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts ordinary moments m to degenerated moments m*, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(m,
+        sigma)``, where `m` are the ordinary moments and `sigma` is the current
+        EQMOM-parameter (float).
     ms2m : callable
-        Function that converts degenerated moments m* to ordinary moments m, for details see Refs. [:cite:label:`Pigou_2018`] and [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms, sigma)``, where `ms` are the degenerated moments and `sigma` is the current EQMOM-parameter (float).
+        Function that converts degenerated moments m* to ordinary moments m, for
+        details see Refs. [:cite:label:`Pigou_2018`] and
+        [:cite:label:`Yuan_2012`]. It must be a function of the form ``f(ms,
+        sigma)``, where `ms` are the degenerated moments and `sigma` is the
+        current EQMOM-parameter (float).
     inv : MomentInversion
         Object of subtype of `MomentInversion`.
     atol : float
@@ -343,9 +396,11 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     rtol : float
         Allowed relative error determining termination of the root search.
     full_output : bool, optional
-        If true, the function additionally returns a dictionary containing intermediate values.
+        If true, the function additionally returns a dictionary containing
+        intermediate values.
     maxiter : int, optional
-        Maximum number of iterations. When exceeded, the algorithm is terminated with a `RuntimeError` (default: 100).
+        Maximum number of iterations. When exceeded, the algorithm is terminated
+        with a `RuntimeError` (default: 100).
 
     Returns
     -------
@@ -356,12 +411,14 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     w_first : array
         Weights of the first quadrature
     results : dict, optional
-        Dictionary with additional details such as intermediate values and convergence information (returned if full_output is true).
+        Dictionary with additional details such as intermediate values and
+        convergence information (returned if full_output is true).
 
     Raises
     ------
     RuntimeError
-        If moments are not realizable or if the algorithm has not converged after `maxiter` iterations.
+        If moments are not realizable or if the algorithm has not converged
+        after `maxiter` iterations.
 
     References
     ----------
@@ -390,7 +447,6 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
         sigma = 0.
         j = np.where(boundary)[0][0]
         xi, w = inv(m[:j])
-        return sigma, xi, w
         if full_output:
             return sigma, xi, w, {'nit': 0}
         return sigma, xi, w
@@ -399,9 +455,7 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
     # (1) Check realizability of the moment set
     realizable = np.all(p0 <= 1) and np.all(p0 >= 0)
     if not realizable:
-        msg = "Moment set is not realizable.\n"
-        msg += "m = {0!s}\n".format(m)
-        msg += "b = {0!s}".format(b0)
+        msg = f"Moment set is not realizable.\nm = {m}\np = {p0}"
         raise RuntimeError(msg)
 
     # (2) Initialize interval
@@ -436,7 +490,8 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
                 sigma['r'][k] = sigma['r'][k-1]
                 success = True
                 break
-            return pigou_hausdorff(sigma0, sigma_range, m[:-2], m2ms, ms2m, inv, atol, rtol, full_output, maxiter)
+            return pigou_hausdorff(sigma0, sigma_range, m[:-2], m2ms, ms2m,
+                                    inv, atol, rtol, full_output, maxiter)
 
         # (3b) Compute sigma[t1] and p*(sigma[t1])
         sigma['t1'][k] = 0.5*(sigma['l'][k-1] + sigma['r'][k-1])
@@ -474,18 +529,20 @@ def pigou_hausdorff(sigma0, sigma_range, mom, m2ms, ms2m, inv, atol, rtol, full_
         # Compute error assuming the worst case and terminate procedure if criteria are met
         eabs_max = sigma['r'][k] - sigma['l'][k]
         success = eabs_max < (atol + rtol*sigma['l'][k])
-        if success: break
+        if success:
+            break
 
     # Raise error if algorithm has failed to converge after `maxiter` iterations
     if not success:
-        err_msg = "Maximum number of iterations ({0:d}) exceeded.\n".format(maxiter)
-        err_msg += "Current sigma interval: ({0:8.7e}, {0:8.7e})".format(sigma['l'][k-1], sigma['r'][k-1])
-        raise RuntimeError(err_msg)
+        msg = f"Maximum number of iterations ({maxiter}) exceeded.\n" \
+            f"Current sigma interval: ({sigma['l'][k-1]:8.7e}, {sigma['r'][k-1]:8.7e})"
+        raise RuntimeError(msg)
 
     nit = k
     xi, w = inv(m2ms(m[:-1], sigma['l'][k]))
     if full_output:
-        results = {'sigma_{0:s}'.format(key): np.array([sigma[key][i] for i in range(nit)]) for key in ['l','r']}
+        results = {f"sigma_{key}": np.array([sigma[key][i] for i
+                        in range(nit)]) for key in ['l','r']}
         results['nit'] = nit
         return sigma['l'][k], xi, w
 

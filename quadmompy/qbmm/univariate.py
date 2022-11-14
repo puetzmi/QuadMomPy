@@ -13,33 +13,42 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+Univariate quadrature-based moment methods.
 
+"""
 import abc
 from math import sqrt, factorial
 import numpy as np
 from scipy.special import roots_hermite, roots_genlaguerre, roots_jacobi
 from scipy.linalg import toeplitz
-from scipy.special import factorial as spfactorial
+from scipy.special import gamma as gamma_func
+
+# For some reason PyLint complains about this although it works just fine
+from scipy.special import beta as beta_func #pylint:disable=no-name-in-module
+
+
+from scipy import optimize
 from quadmompy.core.inversion import MomentInversion
 from quadmompy.core.quadrature import OneDQuadrature
 from quadmompy.qbmm.qbmm import Qbmm
 from quadmompy.qbmm import _eqmom_root_search as eqroots
 from quadmompy.moments.special import laplace_moments
-from scipy.special import gamma as gamma_func
-from scipy.special import beta as beta_func
-from scipy import optimize
 
 
 class UnivariateQbmm(Qbmm):
-    """
-    Base class of all univariate quadrature-based moment methods (QBMMs). It also serves as an interface to dynamically create instances of subclasses.
+    r"""
+    Base class of all univariate quadrature-based moment methods (QBMMs). It
+    also serves as an interface to dynamically create instances of subclasses.
 
     Parameters
     ----------
     inv_type : type or str
-        Basic moment inversion algorithm, can be either subtype of `MomentInversion` or an associated string, see class `MomentInversion`
+        Basic moment inversion algorithm, can be either subtype of
+        `MomentInversion` or an associated string, see class `MomentInversion`
     setup : dict
-        Dictionary with parameters needed to initialize the basic `MomentInversion`-subclass.
+        Dictionary with parameters needed to initialize the basic
+        `MomentInversion`-subclass.
 
     Attributes
     ----------
@@ -47,14 +56,16 @@ class UnivariateQbmm(Qbmm):
         Basic moment inversion algorithm to compute quadrature from moments.
 
     """
-    def __init__(self, inv_type, inv_setup={}, **kwargs):
+    def __init__(self, inv_type, inv_setup=None, **kwargs): # pylint:disable=unused-argument
+        if inv_setup is None:
+            inv_setup = {}
         try:
             self.inversion = inv_type(**inv_setup)
         except TypeError:
             self.inversion = MomentInversion.new(inv_type, **inv_setup)
 
     @abc.abstractmethod
-    def nodes_max(cls, nmom):
+    def nodes_max(self, nmom):
         """
         The maximum number of nodes given `nmom` moments.
 
@@ -69,19 +80,20 @@ class UnivariateQbmm(Qbmm):
             Maximum number of quadrature nodes.
 
         """
-        pass
 
 
 class Qmom(UnivariateQbmm):
     """
     Standard quadrature method of moments (QMOM).
 
-    This class is the implementation of the QMOM [:cite:label:`McGraw_1997`]. It computes N quadrature nodes and weights from a set of 2N moments.
+    This class is the implementation of the QMOM [:cite:label:`McGraw_1997`]. It
+    computes N quadrature nodes and weights from a set of 2N moments.
 
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
 
     References
     ----------
@@ -96,13 +108,15 @@ class Qmom(UnivariateQbmm):
 
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
-        """
-        Return instance of `Qmom` class (necessary for the dynamic selection from parent class to work).
+        r"""
+        Return instance of `Qmom` class (necessary for the dynamic selection
+        from parent class to work).
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary containing parameters for basic moment inversion algorithm.
+            Setup dictionary containing parameters for basic moment inversion
+            algorithm.
 
         Returns
         -------
@@ -125,12 +139,16 @@ class GaGQmom(UnivariateQbmm):
     """
     Gauss/anti-Gauss quadrature method of moments (GaG-QMOM).
 
-    This class is the implementation of the GaG-QMOM [:cite:label:`Puetz_2022`] based on the anti-Gaussian quadrature due to Laurie [:cite:label:`Laurie_1996`]. It computes 2N-1 quadrature nodes and weights from a set of 2N moments.
+    This class is the implementation of the GaG-QMOM [:cite:label:`Puetz_2022`]
+    based on the anti-Gaussian quadrature due to Laurie
+    [:cite:label:`Laurie_1996`]. It computes 2N-1 quadrature nodes and weights
+    from a set of 2N moments.
 
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
 
     References
     ----------
@@ -157,12 +175,14 @@ class GaGQmom(UnivariateQbmm):
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
         """
-        Return instance of `GaGQmom` class (necessary for the dynamic selection from parent class to work).
+        Return instance of `GaGQmom` class (necessary for the dynamic selection
+        from parent class to work).
 
         Parameters
         ----------
         setup : dict
-            Setup dictionary containing parameters for basic moment inversion algorithm.
+            Setup dictionary containing parameters for basic moment inversion
+            algorithm.
 
         Returns
         -------
@@ -174,7 +194,8 @@ class GaGQmom(UnivariateQbmm):
 
     def _inv_gauss(self, mom):
         """
-        Computation of the averaged (2N-1)-node standard Gauss/anti-Gauss quadrature given 2N moments.
+        Computation of the averaged (2N-1)-node standard Gauss/anti-Gauss
+        quadrature given 2N moments.
 
         Parameters
         ----------
@@ -184,7 +205,8 @@ class GaGQmom(UnivariateQbmm):
         Returns
         -------
         quadrature : OneDQuadrature
-            2N-1 quadrature nodes and weights wrapped in `OneDQuadrature` object.
+            2N-1 quadrature nodes and weights wrapped in `OneDQuadrature`
+            object.
 
         """
         nmom = len(mom)
@@ -229,7 +251,8 @@ class GaGQmom(UnivariateQbmm):
 
     def _inv_lobatto(self, mom):
         """
-        Computation of the averaged (2N-1)-node Gauss/anti-Gauss-Lobatto quadrature given 2N moments.
+        Computation of the averaged (2N-1)-node Gauss/anti-Gauss-Lobatto
+        quadrature given 2N moments.
 
         Parameters
         ----------
@@ -239,7 +262,8 @@ class GaGQmom(UnivariateQbmm):
         Returns
         -------
         quadrature : OneDQuadrature
-            2N-1 quadrature nodes and weights wrapped in `OneDQuadrature` object.
+            2N-1 quadrature nodes and weights wrapped in `OneDQuadrature`
+            object.
 
         """
         nmom = len(mom)
@@ -257,11 +281,11 @@ class GaGQmom(UnivariateQbmm):
         xi[::2], w[::2] = self.inversion.quad_from_rc(alpha[:-1], beta[:-1])
 
         # Compute (N+1)-node anti-Gauss-Lobatto quadrature
-        xi_, w_ = self.inversion.quad_from_rc(alpha, beta)
-        xi[1::2] = xi_[1:-1]
-        w[1::2] = w_[1:-1]
-        w[0] += w_[0]
-        w[-1] += w_[-1]
+        xi_agl, w_agl = self.inversion.quad_from_rc(alpha, beta)
+        xi[1::2] = xi_agl[1:-1]
+        w[1::2] = w_agl[1:-1]
+        w[0] += w_agl[0]
+        w[-1] += w_agl[-1]
 
         # The final weights correspond to the average of the Gaussian and anti-Gaussian quadrature
         w *= 0.5
@@ -293,7 +317,11 @@ class ExtendedQmom(UnivariateQbmm):
     """
     The base class for the extended quadrature method of moments (EQMOM).
 
-    This class contains the basic methods used by the extended quadrature method of moments (EQMOM) [:cite:label:`Yuan_2012`]. It also serves as an interface to create objects of specified subclasses characterized by the used kernel density function (KDF) type. Specific methods depending on the selected KDF must be implemented in the respective subclass.
+    This class contains the basic methods used by the extended quadrature method
+    of moments (EQMOM) [:cite:label:`Yuan_2012`]. It also serves as an interface
+    to create objects of specified subclasses characterized by the used kernel
+    density function (KDF) type. Specific methods depending on the selected KDF
+    must be implemented in the respective subclass.
 
     Parameters
     ----------
@@ -304,12 +332,14 @@ class ExtendedQmom(UnivariateQbmm):
     rtol : float, optional
         Relative tolerance used to find EQMOM-parameter sigma. Default is 1e-6.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations. Default is 5.
+        Initial number of first quadrature nodes, needed for some
+        initializations. Default is 5.
 
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
     n_ab : int
         Number of second quadrature nodes per first quadrature node.
     atol : float
@@ -317,21 +347,26 @@ class ExtendedQmom(UnivariateQbmm):
     rtol : float
         Relative tolerance used to find EQMOM-parameter sigma.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations.
+        Initial number of first quadrature nodes, needed for some
+        initializations.
     xi_first : array
         Abscissas of the first quadrature.
     w_first : array
         Weights of the first quadrature.
     xi_second : array
-        Array with shape `(n_ab, len(xi_first))` containing abscissas of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing abscissas of the
+        second quadrature for each first quadrature node.
     w_second : array
-        Array with shape `(n_ab, len(xi_first))` containing weights of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing weights of the
+        second quadrature for each first quadrature node.
     sigma : float
         KDF-specific EQMOM parameter.
     A_coeffs : array
-        Constant factors of sigma in A-matrix (map m* -> m), for details see [:cite:label:`Yuan_2012`].
+        Constant factors of sigma in A-matrix (map m* -> m), for details see
+        [:cite:label:`Yuan_2012`].
     Ainv_coeffs : array
-        Constant factors of sigma in inverse of A (map m -> m*), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in inverse of A (map m -> m*), for details see
+        [:cite:label:`Yuan_2012`]).
     sigma_pow : array
         Sigma powers corresponding to elements in A and Ainv.
 
@@ -360,14 +395,15 @@ class ExtendedQmom(UnivariateQbmm):
         self.sigma_pow = self._init_sigma_pow(nmom)
 
     @classmethod
-    def new(cls, qbmm_setup, **kwargs):
+    def new(cls, qbmm_setup, **kwargs): # pylint:disable=inconsistent-return-statements
         """
         Create a new object of a subclass based on the specified KDF-type.
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary with the KDF-type and additional parameters passed to `UnivariateQbmm` and the selected subclass.
+            Setup dictionary with the KDF-type and additional parameters passed
+            to `UnivariateQbmm` and the selected subclass.
 
         Returns
         -------
@@ -394,9 +430,11 @@ class ExtendedQmom(UnivariateQbmm):
         Parameters
         ----------
         mom : array
-            Set of 2N + 1 moments where N is the number of primary nodes and weights.
+            Set of 2N + 1 moments where N is the number of primary nodes and
+            weights.
         sort_combined : bool, optional
-            If true, the combined nodes are sorted by the abscissae in ascending order, default is `False`.
+            If true, the combined nodes are sorted by the abscissae in ascending
+            order, default is `False`.
 
         Returns
         -------
@@ -426,7 +464,8 @@ class ExtendedQmom(UnivariateQbmm):
                 self.w_first[:n] = w
                 self.xi_first[n:] = self.w_first[n:] = 0.
 
-        # Return first quadrature if sigma is (approximately) zero; set second quadrature accordingly
+        # Return first quadrature if sigma is (approximately) zero; set second
+        # quadrature accordingly
         if abs(self.sigma) < self.atol:
             self.xi_second = np.zeros((self.n_ab, len(self.xi_first)))
             self.xi_second[0,:] = self.xi_first
@@ -436,11 +475,13 @@ class ExtendedQmom(UnivariateQbmm):
 
         # Otherwise compute second quadrature
         self.xi_second, self.w_second = self.second_quad(self.xi_first, self.sigma, self.n_ab)
-        return self._combined_quad(self.w_first, self.xi_second, self.w_second, sort_combined)
+        return self._combined_quad(sort_combined)
 
     def find_sigma(self, mom):
         r"""
-        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of the target function :math:`\mathbf{J}(\sigma)`, see [:cite:label:`Yuan_2012`].
+        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of
+        the target function :math:`\mathbf{J}(\sigma)`, see
+        [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -470,8 +511,10 @@ class ExtendedQmom(UnivariateQbmm):
 
     @abc.abstractmethod
     def _init_sigma_pow(self, nmom):
-        """
-        Initialize array containing the powers of :math:`\sigma` in the lower triangular matrices :math:`\mathbf{A}(\sigma)` and :math:`\mathbf{A}^{-1}(\sigma)`, see [:cite:label:`Yuan_2012`].
+        r"""
+        Initialize array containing the powers of :math:`\sigma` in the lower
+        triangular matrices :math:`\mathbf{A}(\sigma)` and
+        :math:`\mathbf{A}^{-1}(\sigma)`, see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -490,12 +533,13 @@ class ExtendedQmom(UnivariateQbmm):
             +-------------+-------------------+
 
         """
-        pass
 
     @abc.abstractmethod
-    def _init_A_coeffs(self, nmom):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`), see [:cite:label:`Yuan_2012`].
+    def _init_A_coeffs(self, size):
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \rightarrow
+        \mathbf{m}`), see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -507,19 +551,19 @@ class ExtendedQmom(UnivariateQbmm):
         A_coeffs: array
             Constant coefficients in the matrix A with shape (size, size).
 
-        References
-        ----------_
+        References ----------_
             +-------------+-------------------+
             | [Yuan_2012] | :cite:`Yuan_2012` |
             +-------------+-------------------+
 
         """
-        pass
 
     @abc.abstractmethod
-    def _init_Ainv_coeffs(self, nmom):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`), see [:cite:label:`Yuan_2012`].
+    def _init_Ainv_coeffs(self, size):
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m}
+        \rightarrow \mathbf{m}^{*}`), see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -538,11 +582,12 @@ class ExtendedQmom(UnivariateQbmm):
             +-------------+-------------------+
 
         """
-        pass
 
     def A(self, sigma, nmom):
-        """
-        Assemble Matrix :math:`\mathbf{A}(\sigma)`, the linear map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`, see [:cite:label:`Yuan_2012`].
+        r"""
+        Assemble Matrix :math:`\mathbf{A}(\sigma)`, the linear map
+        :math:`\mathbf{m}^{*} \rightarrow \mathbf{m}`, see
+        [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -563,11 +608,14 @@ class ExtendedQmom(UnivariateQbmm):
             +-------------+-------------------+
 
         """
-        return self.A_coeffs[:nmom,:nmom]*sigma**self.sigma_pow[:nmom,:nmom] # works for most KDF-types
+        return self.A_coeffs[:nmom,:nmom] \
+            * sigma**self.sigma_pow[:nmom,:nmom] # works for most KDF-types
 
     def Ainv(self, sigma, nmom):
-        """
-        Assemble Matrix :math:`\mathbf{A}^{-1}(\sigma)`, the linear map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`, see [:cite:label:`Yuan_2012`].
+        r"""
+        Assemble Matrix :math:`\mathbf{A}^{-1}(\sigma)`, the linear map
+        :math:`\mathbf{m} \rightarrow \mathbf{m}^{*}`, see
+        [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -588,18 +636,21 @@ class ExtendedQmom(UnivariateQbmm):
             +-------------+-------------------+
 
         """
-        return self.Ainv_coeffs[:nmom,:nmom]*sigma**self.sigma_pow[:nmom,:nmom] # works for most KDF-types
+        return self.Ainv_coeffs[:nmom,:nmom] \
+                * sigma**self.sigma_pow[:nmom,:nmom] # works for most KDF-types
 
     def _target_function(self, sigma, mom):
-        """
-        Target function :math:`\mathbf{J}(\sigma)` (see [:cite:label:`Yuan_2012`]) of which the smallest root is :math:`\sigma`.
+        r"""
+        Target function :math:`\mathbf{J}(\sigma)` (see
+        [:cite:label:`Yuan_2012`]) of which the smallest root is :math:`\sigma`.
 
         Parameters
         ----------
         sigma : float
             Current sigma.
         mom : array_like
-            Set of 2N + 1 moments where N is the number of primary nodes and weights.
+            Set of 2N + 1 moments where N is the number of primary nodes and
+            weights.
 
         Returns
         -------
@@ -613,7 +664,8 @@ class ExtendedQmom(UnivariateQbmm):
             +-------------+-------------------+
 
         """
-        # The numbers next to the statements below correspond to the steps in section 3.5 in Ref. [Yuan_2012]
+        # The numbers next to the statements below correspond to the steps in
+        # section 3.5 in Ref. [Yuan_2012]
         _2n = len(mom) - 1
         ms = np.zeros(len(mom))
         ms[:-1] = self.m2ms(mom[:-1], sigma)                        # (1.)
@@ -627,8 +679,9 @@ class ExtendedQmom(UnivariateQbmm):
         return self.ms2m(ms, sigma)[_2n] - mom[_2n]                 # (4.)
 
     def ms2m(self, ms, sigma):
-        """
-        Convert degenerated moments :math:`\mathbf{m}^{*}` to ordinary moments :math:`\mathbf{m}`, for details see [:cite:label:`Yuan_2012`].
+        r"""
+        Convert degenerated moments :math:`\mathbf{m}^{*}` to ordinary moments
+        :math:`\mathbf{m}`, for details see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -653,8 +706,9 @@ class ExtendedQmom(UnivariateQbmm):
         return self.A(sigma, nmom)@ms
 
     def m2ms(self, m, sigma):
-        """
-        Convert ordinary moments :math:`\mathbf{m}` to degenerated moments :math:`\mathbf{m}^{*}`, for details see [:cite:label:`Yuan_2012`].
+        r"""
+        Convert ordinary moments :math:`\mathbf{m}` to degenerated moments
+        :math:`\mathbf{m}^{*}`, for details see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -680,8 +734,9 @@ class ExtendedQmom(UnivariateQbmm):
 
     @abc.abstractmethod
     def second_quad(self, xi_first, sigma, n_ab):
-        """
-        Compute second quadrature from the first quadrature and EQMOM-parameter :math:`\sigma`.
+        r"""
+        Compute second quadrature from the first quadrature and EQMOM-parameter
+        :math:`\sigma`.
 
         Parameters
         ----------
@@ -700,11 +755,10 @@ class ExtendedQmom(UnivariateQbmm):
             Array of shape (n_ab, len(xi_first)) containing quadrature weights.
 
         """
-        pass
 
     @abc.abstractmethod
     def _sigma_bounds(self, mom):
-        """
+        r"""
         KDF-specific bounds of the EQMOM-parameter :math:`\sigma`.
 
         Parameters
@@ -718,12 +772,12 @@ class ExtendedQmom(UnivariateQbmm):
             Bounds on sigma.
 
         """
-        pass
 
     @abc.abstractmethod
     def _sigma_analyt(self, mom):
-        """
-        If possible, compute the parameter :math:`\sigma` analytically (depends on the number of quadrature nodes).
+        r"""
+        If possible, compute the parameter :math:`\sigma` analytically (depends
+        on the number of quadrature nodes).
 
         Parameters
         ----------
@@ -738,53 +792,33 @@ class ExtendedQmom(UnivariateQbmm):
         """
         return None
 
-    def _combined_quad(self, w_first, xi_second, w_second, sort=False):
-        """
-        Combine :math:`N_1`-node first quadrature and :math:`N_2`-node second quadrature into single :math:`N_1\\times N2`-node-quadrature.
+    def _combined_quad(self, sort=False):
+        r"""
+        Combine :math:`N_1`-node first quadrature and :math:`N_2`-node second
+        quadrature into single :math:`N_1\times N2`-node-quadrature.
 
         Parameters
         ----------
-        w_first : array
-            Weights of the first quadrature.
-        xi_second : array
-            Abscissae of the second quadrature.
-        w_second : array
-            Weights of the second quadrature.
         sort : bool, optional
-            True if the nodes are supposed to be sorted by abscissae in ascending order (default: False).
+            True if the nodes are supposed to be sorted by abscissae in
+            ascending order (default: False).
 
         Returns
         -------
         xi : array
-            Abscissae in flattened 1D-array with length `len(xi_first)*len(xi_second)`.
+            Abscissae in flattened 1D-array with length
+            `len(xi_first)*len(xi_second)`.
         w : array
-            Combined weights in flattened 1D-array with length `len(xi_first)*len(xi_second)`.
+            Combined weights in flattened 1D-array with length
+            `len(xi_first)*len(xi_second)`.
 
         """
-        w = (w_first*w_second).T.flatten()
-        xi = xi_second.T.flatten()
+        w = (self.w_first*self.w_second).T.flatten()
+        xi = self.xi_second.T.flatten()
         if not sort:
             return xi, w
         idx = np.argsort(xi)
         return xi[idx], w[idx]
-
-    @abc.abstractmethod
-    def ndf(self, xi):
-        """
-        Compute :math:`n(\\xi)` based on the selected KDF-type.
-
-        Parameters
-        ----------
-        xi : array or float
-            Abscissa(s).
-
-        Returns
-        -------
-        ndf : array or float
-            NDF-value(s) at xi.
-
-        """
-        pass
 
 
 class GaussianEqmom(ExtendedQmom):
@@ -799,7 +833,8 @@ class GaussianEqmom(ExtendedQmom):
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
     n_ab : int
         Number of second quadrature nodes per first quadrature node.
     atol : float
@@ -807,27 +842,34 @@ class GaussianEqmom(ExtendedQmom):
     rtol : float
         Relative tolerance used to find EQMOM-parameter sigma.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations.
+        Initial number of first quadrature nodes, needed for some
+        initializations.
     xi_first : array
         Abscissas of the first quadrature.
     w_first : array
         Weights of the first quadrature.
     xi_second : array
-        Array with shape `(n_ab, len(xi_first))` containing abscissas of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing abscissas of the
+        second quadrature for each first quadrature node.
     w_second : array
-        Array with shape `(n_ab, len(xi_first))` containing weights of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing weights of the
+        second quadrature for each first quadrature node.
     sigma : float
         KDF-specific EQMOM parameter.
     A_coeffs : array
-        Constant factors of sigma in A-matrix (map m* -> m), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in A-matrix (map m* -> m), for details see
+        [:cite:label:`Yuan_2012`]).
     Ainv_coeffs : array
-        Constant factors of sigma in inverse of A (map m -> m*), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in inverse of A (map m -> m*), for details see
+        [:cite:label:`Yuan_2012`]).
     sigma_pow : array
         Sigma powers corresponding to elements in A and Ainv.
     xi_hermite : array
-        Nodes of a Gauss-Hermite-quadrature to compute the second quadrature by simple linear transformation.
+        Nodes of a Gauss-Hermite-quadrature to compute the second quadrature by
+        simple linear transformation.
     w_hermite : array
-        Weights of a Gauss-Hermite-quadrature to compute the second quadrature by simple linear transformation.
+        Weights of a Gauss-Hermite-quadrature to compute the second quadrature
+        by simple linear transformation.
 
     References
     ----------
@@ -839,19 +881,20 @@ class GaussianEqmom(ExtendedQmom):
     name = 'gaussianEQMOM'
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        nmom = 2*self.n_init + 1
-        self.xi_hermite, self.w_hermite_norm = roots_hermite(self.n_ab)
+        self.xi_hermite, self.w_hermite_norm = roots_hermite(self.n_ab)[:2]
         self.w_hermite_norm /= sqrt(np.pi)
 
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
         """
-        Return instance of `GaussianEqmom` class (necessary for the dynamic selection from parent class to work).
+        Return instance of `GaussianEqmom` class (necessary for the dynamic
+        selection from parent class to work).
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary containing required parameters, see base classes `UnivariateQbmm` and `ExtendedQmom`.
+            Setup dictionary containing required parameters, see base classes
+            `UnivariateQbmm` and `ExtendedQmom`.
 
         Returns
         -------
@@ -862,8 +905,12 @@ class GaussianEqmom(ExtendedQmom):
         return cls(**qbmm_setup)
 
     def find_sigma(self, mom):
-        """
-        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of the target function :math:`\mathbf{J}(\sigma)`, see Ref. [:cite:label:`Yuan_2012`]. For the EQMOM with gaussian KDFs (Hamburger problem) the improved method based on moment realizability proposed in Ref. [:cite:label:`Pigou_2018`] is used.
+        r"""
+        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of
+        the target function :math:`\mathbf{J}(\sigma)`, see Ref.
+        [:cite:label:`Yuan_2012`]. For the EQMOM with gaussian KDFs (Hamburger
+        problem) the improved method based on moment realizability proposed in
+        Ref. [:cite:label:`Pigou_2018`] is used.
 
         Parameters
         ----------
@@ -893,8 +940,11 @@ class GaussianEqmom(ExtendedQmom):
             self.inversion, self.atol, self.rtol)
 
     def _init_sigma_pow(self, nmom):
-        """
-        Initialize array containing the powers of :math:`\sigma` in the lower triangular matrices :math:`\mathbf{A}(\sigma)` and :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.1.2).
+        r"""
+        Initialize array containing the powers of :math:`\sigma` in the lower
+        triangular matrices :math:`\mathbf{A}(\sigma)` and
+        :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.1.2).
 
         Parameters
         ----------
@@ -918,8 +968,11 @@ class GaussianEqmom(ExtendedQmom):
         return sigma_pow
 
     def _init_A_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.1.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*}
+        \rightarrow \mathbf{m}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.1.2).
 
         Parameters
         ----------
@@ -946,8 +999,11 @@ class GaussianEqmom(ExtendedQmom):
         return A
 
     def _init_Ainv_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.1.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m}
+        \rightarrow \mathbf{m}^{*}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.1.2).
 
         Parameters
         ----------
@@ -974,8 +1030,13 @@ class GaussianEqmom(ExtendedQmom):
         return Ainv
 
     def second_quad(self, xi_first, sigma, n_ab):
-        """
-        Compute second quadrature from the first quadrature and EQMOM-parameter :math:`\sigma`, which is, in the case of Gaussian KDFs, the parameter :math:`\sigma` of a normal distribution, i.e. the standard deviation. In this case, the second quadrature can be calculated by a simple linear transformation of the precomputed nodes and weights of a Gauss-Hermite quadrature.
+        r"""
+        Compute second quadrature from the first quadrature and EQMOM-parameter
+        :math:`\sigma`, which is, in the case of Gaussian KDFs, the parameter
+        :math:`\sigma` of a normal distribution, i.e. the standard deviation. In
+        this case, the second quadrature can be calculated by a simple linear
+        transformation of the precomputed nodes and weights of a Gauss-Hermite
+        quadrature.
 
         Parameters
         ----------
@@ -999,11 +1060,14 @@ class GaussianEqmom(ExtendedQmom):
         return xi, w
 
     def _sigma_bounds(self, mom):
-        return (0., (1. + 1e-12)*self._sigma_analyt(mom[:3])) # Exact sigma_max may result in divisions by zero
+        return (0., (1. + 1e-12) \
+            * self._sigma_analyt(mom[:3])) # Exact sigma_max may result in divisions by zero
 
     def _sigma_analyt(self, mom):
-        """
-        Analytical calculation of sigma if the number of first quadrature nodes N < 3. The analytical expression for N=2 was taken from Ref. [:cite:label:`Chalons_2010`].
+        r"""
+        Analytical calculation of sigma if the number of first quadrature nodes
+        N < 3. The analytical expression for N=2 was taken from Ref.
+        [:cite:label:`Chalons_2010`].
 
         Parameters
         ----------
@@ -1013,7 +1077,8 @@ class GaussianEqmom(ExtendedQmom):
         Returns
         -------
         sigma : float or None
-            Analytically calculated value of sigma if possible, `None` otherwise.
+            Analytically calculated value of sigma if possible, `None`
+            otherwise.
 
         References
         ----------
@@ -1025,26 +1090,33 @@ class GaussianEqmom(ExtendedQmom):
         if len(mom) == 3:
             return sqrt(mom[2]/mom[0] - (mom[1]/mom[0])**2)
         if len(mom) == 5:
-            # Normalization so that m[0] = 1 (does not affect the result and simplifies the formulas)
+            # Normalization so that m[0] = 1 (does not affect the result and
+            # simplifies the formulas)
             m = mom/mom[0]
             # Proposition 1 in Ref. [Chalons_2010]
             e = m[2] - m[1]**2
             q = m[3] - m[1]**3 - 3*m[1]*e
             eta = m[4] - 3*m[1]**4 - 4*m[3]*m[1] + 6*m[2]*m[1]**2
             sigma_0 = np.roots([2., 0., eta - 3*e**2, q**2])
-            sigma_0 = float(sigma_0[np.isclose(sigma_0.imag, 0.)].real) # Real root is unique, see [Chalons_2010]
+
+            # Real root is unique, see [Chalons_2010]
+            sigma_0 = float(sigma_0[np.isclose(sigma_0.imag, 0.)].real)
+
             return (sigma_0 + e)**0.5
         return None
 
     def ndf(self, xi, sigma_zero=0.):
-        """
-        Compute :math:`n(\\xi)`, in this case a weighted sum of normal densities
+        r"""
+        Compute :math:`n(\xi)`, in this case a weighted sum of normal densities
 
         .. math::
 
-            n(\\xi) = \\frac{1}{\sqrt{2\pi} \sigma} \sum\limits_{j=1}^N w_j e^{-\\frac{1}{2} \\frac{(\\xi - \\xi_j)^2}{\sigma^2}},
+            n(\xi) = \frac{1}{\sqrt{2\pi} \sigma} \sum\limits_{j=1}^N w_j
+            e^{-\frac{1}{2} \frac{(\xi - \xi_j)^2}{\sigma^2}},
 
-        where :math:`\\xi_1 \dots \\xi_N` are the nodes of the first quadrature and :math:`\sigma` is the EQMOM parameter corresponding to the first :math:`2N+1` moments.
+        where :math:`\xi_1 \dots \xi_N` are the nodes of the first quadrature
+        and :math:`\sigma` is the EQMOM parameter corresponding to the first
+        :math:`2N+1` moments.
 
         Parameters
         ----------
@@ -1066,8 +1138,9 @@ class GaussianEqmom(ExtendedQmom):
 
 
 class LaplaceEqmom(ExtendedQmom):
-    """
-    EQMOM with Laplace-KDFs as proposed by Pigou et al. [:cite:label:`Pigou_2018`].
+    r"""
+    EQMOM with Laplace-KDFs as proposed by Pigou et al.
+    [:cite:label:`Pigou_2018`].
 
     Parameters
     ----------
@@ -1077,7 +1150,8 @@ class LaplaceEqmom(ExtendedQmom):
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
     n_ab : int
         Number of second quadrature nodes per first quadrature node.
     atol : float
@@ -1085,25 +1159,32 @@ class LaplaceEqmom(ExtendedQmom):
     rtol : float
         Relative tolerance used to find EQMOM-parameter sigma.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations.
+        Initial number of first quadrature nodes, needed for some
+        initializations.
     xi_first : array
         Abscissas of the first quadrature.
     xi_second : array
-        Array with shape `(n_ab, len(xi_first))` containing abscissas of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing abscissas of the
+        second quadrature for each first quadrature node.
     w_second : array
-        Array of shape `(n_ab, len(xi_first))` with weights of the second quadrature for each first quadrature node.
+        Array of shape `(n_ab, len(xi_first))` with weights of the second
+        quadrature for each first quadrature node.
     sigma : float
         KDF-specific EQMOM parameter.
     A_coeffs : array
-        Constant factors of sigma in A-matrix (map m* -> m), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in A-matrix (map m* -> m), for details see
+        [:cite:label:`Yuan_2012`]).
     Ainv_coeffs : array
-        Constant factors of sigma in inverse of A (map m -> m*), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in inverse of A (map m -> m*), for details see
+        [:cite:label:`Yuan_2012`]).
     sigma_pow : array
         Sigma powers corresponding to elements in A and Ainv.
     xi_std : array
-        Nodes of the 'standard' Laplace distribution to compute the second quadrature by simple linear transformation.
+        Nodes of the 'standard' Laplace distribution to compute the second
+        quadrature by simple linear transformation.
     w_std : array
-        Weights of the 'standard' Laplace distribution to compute the second quadrature by simple linear transformation.
+        Weights of the 'standard' Laplace distribution to compute the second
+        quadrature by simple linear transformation.
 
     References
     ----------
@@ -1117,19 +1198,20 @@ class LaplaceEqmom(ExtendedQmom):
     name = 'laplaceEQMOM'
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        nmom = 2*self.n_init + 1
         mom_std = laplace_moments(2*self.n_ab, mu=0., b=1.)
         self.xi_std, self.w_std = self.inversion(mom_std)
 
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
-        """
-        Return instance of `LaplaceEqmom` class (necessary for the dynamic selection from parent class to work).
+        r"""
+        Return instance of `LaplaceEqmom` class (necessary for the dynamic
+        selection from parent class to work).
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary containing required parameters, see base classes `UnivariateQbmm` and `ExtendedQmom`.
+            Setup dictionary containing required parameters, see base classes
+            `UnivariateQbmm` and `ExtendedQmom`.
 
         Returns
         -------
@@ -1140,8 +1222,12 @@ class LaplaceEqmom(ExtendedQmom):
         return cls(**qbmm_setup)
 
     def find_sigma(self, mom):
-        """
-        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of the target function :math:`\mathbf{J}(\sigma)`, see [:cite:label:`Yuan_2012`]. For the EQMOM with Laplace-KDFs (Hamburger problem) the improved method based on moment realizability proposed in Ref. [:cite:label:`Pigou_2018`] is used.
+        r"""
+        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of
+        the target function :math:`\mathbf{J}(\sigma)`, see
+        [:cite:label:`Yuan_2012`]. For the EQMOM with Laplace-KDFs (Hamburger
+        problem) the improved method based on moment realizability proposed in
+        Ref. [:cite:label:`Pigou_2018`] is used.
 
         Parameters
         ----------
@@ -1171,8 +1257,11 @@ class LaplaceEqmom(ExtendedQmom):
             self.inversion, self.atol, self.rtol)
 
     def _init_sigma_pow(self, nmom):
-        """
-        Initialize array containing the powers of :math:`\sigma` in the lower triangular matrices :math:`\mathbf{A}(\sigma)` and :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.2.2).
+        r"""
+        Initialize array containing the powers of :math:`\sigma` in the lower
+        triangular matrices :math:`\mathbf{A}(\sigma)` and
+        :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.2.2).
 
         Parameters
         ----------
@@ -1196,8 +1285,11 @@ class LaplaceEqmom(ExtendedQmom):
         return sigma_pow
 
     def _init_A_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.2.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*}
+        \rightarrow \mathbf{m}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.2.2).
 
         Parameters
         ----------
@@ -1224,8 +1316,11 @@ class LaplaceEqmom(ExtendedQmom):
         return A
 
     def _init_Ainv_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.2.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m}
+        \rightarrow \mathbf{m}^{*}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.2.2).
 
         Parameters
         ----------
@@ -1251,8 +1346,13 @@ class LaplaceEqmom(ExtendedQmom):
         return Ainv
 
     def second_quad(self, xi_first, sigma, n_ab):
-        """
-        Compute second quadrature from the first quadrature and EQMOM-parameter :math:`\sigma`, which is, in the case of Laplace-KDFs, the scale parameter of a Laplace distribution. In this case, the second quadrature can be calculated by a simple linear transformation of the precomputed nodes and weights of a 'standard' Laplace distribution (location parameter 0 and scale parameter 1).
+        r"""
+        Compute second quadrature from the first quadrature and EQMOM-parameter
+        :math:`\sigma`, which is, in the case of Laplace-KDFs, the scale
+        parameter of a Laplace distribution. In this case, the second quadrature
+        can be calculated by a simple linear transformation of the precomputed
+        nodes and weights of a 'standard' Laplace distribution (location
+        parameter 0 and scale parameter 1).
 
         Parameters
         ----------
@@ -1276,10 +1376,11 @@ class LaplaceEqmom(ExtendedQmom):
         return xi, w
 
     def _sigma_bounds(self, mom):
-        return (0., (1. + 1e-12)*self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
+        return (0., (1. + 1e-12) \
+            * self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
 
     def _sigma_analyt(self, mom):
-        """
+        r"""
         Analytical calculation of sigma for a single node.
 
         Parameters
@@ -1299,14 +1400,18 @@ class LaplaceEqmom(ExtendedQmom):
         return None
 
     def ndf(self, xi, sigma_zero=0.):
-        """
-        Compute :math:`n(\\xi)`, in this case a weighted sum of Laplace-densities
+        r"""
+        Compute :math:`n(\xi)`, in this case a weighted sum of
+        Laplace-densities
 
         .. math::
 
-            n(\\xi) = \\frac{1}{2 \sigma} \sum\limits_{j=1}^N w_j e^{-\\frac{|\\xi - \\xi_j|}{\sigma}},
+            n(\xi) = \frac{1}{2 \sigma} \sum\limits_{j=1}^N w_j
+            e^{-\frac{|\xi - \xi_j|}{\sigma}},
 
-        where :math:`\\xi_1 \dots \\xi_N` are the nodes of the first quadrature and :math:`\sigma` is the EQMOM parameter corresponding to the first :math:`2N+1` moments.
+        where :math:`\xi_1 \dots \xi_N` are the nodes of the first quadrature
+        and :math:`\sigma` is the EQMOM parameter corresponding to the first
+        :math:`2N+1` moments.
 
         Parameters
         ----------
@@ -1339,7 +1444,8 @@ class GammaEqmom(ExtendedQmom):
     Attributes
     ----------
     inversion : MomentInversion
-        Basic moment inversion algorithm to compute quadrature from moments, see class `MomentInversion`.
+        Basic moment inversion algorithm to compute quadrature from moments, see
+        class `MomentInversion`.
     n_ab : int
         Number of second quadrature nodes per first quadrature node.
     atol : float
@@ -1347,19 +1453,24 @@ class GammaEqmom(ExtendedQmom):
     rtol : float
         Relative tolerance used to find EQMOM-parameter sigma.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations.
+        Initial number of first quadrature nodes, needed for some
+        initializations.
     xi_first : array
         Abscissas of the first quadrature.
     xi_second : array
-        Array with shape `(n_ab, len(xi_first))` containing abscissas of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing abscissas of the
+        second quadrature for each first quadrature node.
     w_second : array
-        Array of shape `(n_ab, len(xi_first))` with weights of the second quadrature for each first quadrature node.
+        Array of shape `(n_ab, len(xi_first))` with weights of the second
+        quadrature for each first quadrature node.
     sigma : float
         KDF-specific EQMOM parameter.
     A_coeffs : array
-        Constant factors of sigma in A-matrix (map m* -> m), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in A-matrix (map m* -> m), for details see
+        [:cite:label:`Yuan_2012`]).
     Ainv_coeffs : array
-        Constant factors of sigma in inverse of A (map m -> m*), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in inverse of A (map m -> m*), for details see
+        [:cite:label:`Yuan_2012`]).
     sigma_pow : array
         Sigma powers corresponding to elements in A and Ainv.
 
@@ -1377,12 +1488,14 @@ class GammaEqmom(ExtendedQmom):
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
         """
-        Return instance of `GammaEqmom` class (necessary for the dynamic selection from parent class to work).
+        Return instance of `GammaEqmom` class (necessary for the dynamic
+        selection from parent class to work).
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary containing required parameters, see base classes `UnivariateQbmm` and `ExtendedQmom`.
+            Setup dictionary containing required parameters, see base classes
+            `UnivariateQbmm` and `ExtendedQmom`.
 
         Returns
         -------
@@ -1393,8 +1506,12 @@ class GammaEqmom(ExtendedQmom):
         return cls(**qbmm_setup)
 
     def find_sigma(self, mom):
-        """
-        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of the target function :math:`\mathbf{J}(\sigma)`, see [:cite:label:`Yuan_2012`]. For the EQMOM with Gamma-KDFs (Stieltjes problem) the improved method based on moment realizability proposed in Ref. [:cite:label:`Pigou_2018`] is used.
+        r"""
+        Routine to find the EQMOM parameter :math:`\sigma`, which is the root of
+        the target function :math:`\mathbf{J}(\sigma)`, see
+        [:cite:label:`Yuan_2012`]. For the EQMOM with Gamma-KDFs (Stieltjes
+        problem) the improved method based on moment realizability proposed in
+        Ref. [:cite:label:`Pigou_2018`] is used.
 
         Parameters
         ----------
@@ -1424,8 +1541,11 @@ class GammaEqmom(ExtendedQmom):
             self.inversion, self.atol, self.rtol)
 
     def _init_sigma_pow(self, nmom):
-        """
-        Initialize array containing the powers of :math:`\sigma` in the lower triangular matrices :math:`\mathbf{A}(\sigma)` and :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.4.2).
+        r"""
+        Initialize array containing the powers of :math:`\sigma` in the lower
+        triangular matrices :math:`\mathbf{A}(\sigma)` and
+        :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.4.2).
 
         Parameters
         ----------
@@ -1451,8 +1571,11 @@ class GammaEqmom(ExtendedQmom):
         return sigma_pow
 
     def _init_A_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (section B.4.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \rightarrow
+        \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (section
+        B.4.2).
 
         Parameters
         ----------
@@ -1479,8 +1602,11 @@ class GammaEqmom(ExtendedQmom):
         return A
 
     def _init_Ainv_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.4.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m}
+        \rightarrow \mathbf{m}^{*}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.4.2).
 
         Parameters
         ----------
@@ -1507,8 +1633,11 @@ class GammaEqmom(ExtendedQmom):
         return Ainv
 
     def second_quad(self, xi_first, sigma, n_ab):
-        """
-        Compute second quadrature from the first quadrature and EQMOM-parameter :math:`\sigma`. In the case of Gamma-KDFs, the second quadrature is related to the generalized Laguerre quadrature, see Ref. [:cite:label:`Yuan_2012`].
+        r"""
+        Compute second quadrature from the first quadrature and EQMOM-parameter
+        :math:`\sigma`. In the case of Gamma-KDFs, the second quadrature is
+        related to the generalized Laguerre quadrature, see Ref.
+        [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -1546,7 +1675,8 @@ class GammaEqmom(ExtendedQmom):
         return xi*sigma, w
 
     def _sigma_bounds(self, mom):
-        return (0., (1. + 1e-12)*self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
+        return (0., (1. + 1e-12) \
+            * self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
 
     def _sigma_analyt(self, mom):
         """
@@ -1569,14 +1699,17 @@ class GammaEqmom(ExtendedQmom):
         return None
 
     def ndf(self, xi, sigma_zero=0.):
-        """
-        Compute :math:`n(\\xi)`, in this case a weighted sum of Gamma-densities
+        r"""
+        Compute :math:`n(\xi)`, in this case a weighted sum of Gamma-densities
 
         .. math::
 
-            n(\\xi) = \sum\limits_{j=1}^N w_j \\frac{1}{\Gamma(\\xi_j/\sigma) \sigma^{\\xi_j/\sigma}}\\xi^{\\xi_j/\sigma - 1} e^{-\\xi/\sigma}
+            n(\xi) = \sum\limits_{j=1}^N w_j \frac{1}{\Gamma(\xi_j/\sigma)
+            \sigma^{\xi_j/\sigma}}\xi^{\xi_j/\sigma - 1} e^{-\xi/\sigma}
 
-        where :math:`\Gamma` denotes the gamma function, :math:`\\xi_1 \dots \\xi_N` are the nodes of the first quadrature and :math:`\sigma` is the EQMOM parameter corresponding to the first :math:`2N+1` moments.
+        where :math:`\Gamma` denotes the gamma function, :math:`\xi_1 \dots
+        \xi_N` are the nodes of the first quadrature and :math:`\sigma` is the
+        EQMOM parameter corresponding to the first :math:`2N+1` moments.
 
         Parameters
         ----------
@@ -1619,19 +1752,24 @@ class BetaEqmom(ExtendedQmom):
     rtol : float
         Relative tolerance used to find EQMOM-parameter sigma.
     n_init : int
-        Initial number of first quadrature nodes, needed for some initializations.
+        Initial number of first quadrature nodes, needed for some
+        initializations.
     xi_first : array
         Abscissas of the first quadrature.
     xi_second : array
-        Array with shape `(n_ab, len(xi_first))` containing abscissas of the second quadrature for each first quadrature node.
+        Array with shape `(n_ab, len(xi_first))` containing abscissas of the
+        second quadrature for each first quadrature node.
     w_second : array
-        Array of shape `(n_ab, len(xi_first))` with weights of the second quadrature for each first quadrature node.
+        Array of shape `(n_ab, len(xi_first))` with weights of the second
+        quadrature for each first quadrature node.
     sigma : float
         KDF-specific EQMOM parameter.
     A_coeffs : array
-        Constant factors of sigma in A-matrix (map m* -> m), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in A-matrix (map m* -> m), for details see
+        [:cite:label:`Yuan_2012`]).
     Ainv_coeffs : array
-        Constant factors of sigma in inverse of A (map m -> m*), for details see [:cite:label:`Yuan_2012`]).
+        Constant factors of sigma in inverse of A (map m -> m*), for details see
+        [:cite:label:`Yuan_2012`]).
     sigma_pow : array
         Sigma powers corresponding to elements in A and Ainv.
 
@@ -1648,13 +1786,15 @@ class BetaEqmom(ExtendedQmom):
 
     @classmethod
     def new(cls, qbmm_setup, **kwargs):
-        """
-        Return instance of `BetaEqmom` class (necessary for the dynamic selection from parent class to work).
+        r"""
+        Return instance of `BetaEqmom` class (necessary for the dynamic
+        selection from parent class to work).
 
         Parameters
         ----------
         qbmm_setup : dict
-            Setup dictionary containing required parameters, see base classes `UnivariateQbmm` `ExtendedQmom`.
+            Setup dictionary containing required parameters, see base classes
+            `UnivariateQbmm` `ExtendedQmom`.
 
         Returns
         -------
@@ -1666,15 +1806,18 @@ class BetaEqmom(ExtendedQmom):
 
     # TODO make Pigou-root-finding algorithm more robust
     def find_sigma(self, mom):
-         bounds = self._sigma_bounds(mom)
-         return eqroots.pigou_hausdorff(bounds[1], bounds, mom, self.m2ms, self.ms2m, \
-            self.inversion, self.atol, self.rtol)
+        bounds = self._sigma_bounds(mom)
+        return eqroots.pigou_hausdorff(bounds[1], bounds, mom, self.m2ms, self.ms2m, \
+        self.inversion, self.atol, self.rtol)
         #
         # return super().find_sigma(mom)
 
     def _init_sigma_pow(self, nmom):
-        """
-        Initialize array containing the powers of :math:`\sigma` in the lower triangular matrices :math:`\mathbf{A}(\sigma)` and :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.6.2).
+        r"""
+        Initialize array containing the powers of :math:`\sigma` in the lower
+        triangular matrices :math:`\mathbf{A}(\sigma)` and
+        :math:`\mathbf{A}^{-1}(\sigma)` as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.6.2).
 
         Parameters
         ----------
@@ -1702,8 +1845,11 @@ class BetaEqmom(ExtendedQmom):
         return sigma_pow
 
     def _init_A_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (section B.6.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}(\sigma)` (map :math:`\mathbf{m}^{*} \rightarrow
+        \mathbf{m}`) as described in Ref. [:cite:label:`Pigou_2018`] (section
+        B.6.2).
 
         Parameters
         ----------
@@ -1732,8 +1878,11 @@ class BetaEqmom(ExtendedQmom):
         return A
 
     def _init_Ainv_coeffs(self, size):
-        """
-        Initialize matrix with the constant factors in the lower triangular matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`) as described in Ref. [:cite:label:`Pigou_2018`] (Appendix B.6.2).
+        r"""
+        Initialize matrix with the constant factors in the lower triangular
+        matrix :math:`\mathbf{A}^{-1}(\sigma)` (map :math:`\mathbf{m}
+        \rightarrow \mathbf{m}^{*}`) as described in Ref.
+        [:cite:label:`Pigou_2018`] (Appendix B.6.2).
 
         Parameters
         ----------
@@ -1762,8 +1911,10 @@ class BetaEqmom(ExtendedQmom):
         return Ainv
 
     def A(self, sigma, nmom):
-        """
-        Assemble Matrix :math:`\mathbf{A}(\sigma)`, the linear map :math:`\mathbf{m}^{*} \\rightarrow \mathbf{m}`, for Beta-EQMOM as described in [:cite:label:`Pigou_2018`] (Appendix B.6.2).
+        r"""
+        Assemble Matrix :math:`\mathbf{A}(\sigma)`, the linear map
+        :math:`\mathbf{m}^{*} \rightarrow \mathbf{m}`, for Beta-EQMOM as
+        described in [:cite:label:`Pigou_2018`] (Appendix B.6.2).
 
         Parameters
         ----------
@@ -1793,8 +1944,10 @@ class BetaEqmom(ExtendedQmom):
         return A_
 
     def Ainv(self, sigma, nmom):
-        """
-        Assemble Matrix :math:`\mathbf{A}^{-1}(\sigma)`, the linear map :math:`\mathbf{m} \\rightarrow \mathbf{m}^{*}`, for Beta-EQMOM as described in [:cite:label:`Pigou_2018`] (Appendix B.6.2).
+        r"""
+        Assemble Matrix :math:`\mathbf{A}^{-1}(\sigma)`, the linear map
+        :math:`\mathbf{m} \rightarrow \mathbf{m}^{*}`, for Beta-EQMOM as
+        described in [:cite:label:`Pigou_2018`] (Appendix B.6.2).
 
         Parameters
         ----------
@@ -1824,8 +1977,10 @@ class BetaEqmom(ExtendedQmom):
         return Ainv_
 
     def second_quad(self, xi_first, sigma, n_ab):
-        """
-        Compute second quadrature from the first quadrature and EQMOM-parameter :math:`\sigma`. In the case of Beta-KDFs, the second quadrature is related to the Gauss-Jacobi quadrature, see [:cite:label:`Yuan_2012`].
+        r"""
+        Compute second quadrature from the first quadrature and EQMOM-parameter
+        :math:`\sigma`. In the case of Beta-KDFs, the second quadrature is
+        related to the Gauss-Jacobi quadrature, see [:cite:label:`Yuan_2012`].
 
         Parameters
         ----------
@@ -1868,7 +2023,8 @@ class BetaEqmom(ExtendedQmom):
         return 0.5*(xi + 1), w
 
     def _sigma_bounds(self, mom):
-        return (0., (1. + 1e-12)*self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
+        return (0., (1. + 1e-12) \
+            * self._sigma_analyt(mom[:3])) # exact sigma_max may result in divisions by zero
 
     def _sigma_analyt(self, mom):
         """
@@ -1891,14 +2047,18 @@ class BetaEqmom(ExtendedQmom):
         return None
 
     def ndf(self, xi, sigma_zero=0.):
-        """
-        Compute :math:`n(\\xi)`, in this case a weighted sum of normal densities
+        r"""
+        Compute :math:`n(\xi)`, in this case a weighted sum of normal densities
 
         .. math::
 
-            n(\\xi) = \\sum\\limits_{j=1}^{N} w_j \\frac{\\xi^{\\xi_j/\\sigma} (1-\\xi)^{(1-\\xi_j)/\\sigma - 1}}{B(\\xi_j/\\sigma, (1 - \\xi_j)/\\sigma)},
+            n(\xi) = \sum\limits_{j=1}^{N} w_j \frac{\xi^{\xi_j/\sigma}
+            (1-\xi)^{(1-\xi_j)/\sigma - 1}}{B(\xi_j/\sigma, (1 -
+            \xi_j)/\sigma)},
 
-        where :math:`B` is the beta function, :math:`\\xi_1 \dots \\xi_N` are the nodes of the first quadrature and :math:`\sigma` is the EQMOM parameter corresponding to the first :math:`2N+1` moments.
+        where :math:`B` is the beta function, :math:`\xi_1 \dots \xi_N` are the
+        nodes of the first quadrature and :math:`\sigma` is the EQMOM parameter
+        corresponding to the first :math:`2N+1` moments.
 
         Parameters
         ----------

@@ -15,7 +15,8 @@
 #
 
 """
-Module with base class for all quadrature-based moment methods (QBMMs) as well as QBMM-related convenience functions.
+Module with base class for all quadrature-based moment methods (QBMMs) as well
+as QBMM-related convenience functions.
 
 """
 import abc
@@ -46,24 +47,27 @@ class Qbmm(metaclass=abc.ABCMeta):
             Quadrature weights with same length as `x`.
 
         """
-        pass
 
     @classmethod
-    def new(cls, qbmm_type, qbmm_setup, n_dims=None, **kwargs):
+    def new(cls, qbmm_type, qbmm_setup, n_dims=None, **kwargs):     # pylint:disable=inconsistent-return-statements
         """
-        Create new instance of a specified `Qbmm`-subtype by calling the `new`-method implemented in the subclass.
+        Create new instance of a specified `Qbmm`-subtype by calling the
+        `new`-method implemented in the subclass.
 
         Parameters
         ----------
         qbmm_type : str or type
-            Qbmm-subtype, either directly as type or as string or by `name`-variable implemented in subclass.
+            Qbmm-subtype, either directly as type or as string or by
+            `name`-variable implemented in subclass.
         qbmm_setup : dict
-            Dictionary containing the parameters required to initialize `qbmm_type`-object.
+            Dictionary containing the parameters required to initialize
+            `qbmm_type`-object.
 
         Returns
         -------
         new : Qbmm
-            Instance of the specified subclass through the subclass's `new`-method.
+            Instance of the specified subclass through the subclass's
+            `new`-method.
 
         Raises
         ------
@@ -90,10 +94,11 @@ class Qbmm(metaclass=abc.ABCMeta):
                 try:
                     qbmm_types = {scls.__name__: scls for scls in subclasses}
                     return qbmm_types[qbmm_type].new(qbmm_setup, **kwargs)
-                except KeyError:
-                    msg = "Unknown {0:s}-type `{1:s}`.".format(cls.__name__, qbmm_type)
-                    msg += " Available types are: {0!s}.".format(list(qbmm_types.keys()))
-                    raise ValueError(msg)
+                except KeyError as err:
+                    valid_types = list(qbmm_types.keys())
+                    msg = f"Unknown {cls.__name__}-type `{qbmm_type}`. " \
+                        f"Available types are: {valid_types}."
+                    raise ValueError(msg) from err
 
     @classmethod
     def from_dict(cls, setup_dict):
@@ -116,7 +121,9 @@ class Qbmm(metaclass=abc.ABCMeta):
     @classmethod
     def from_file(cls, filename):
         """
-        Create new instance of a Qbmm subclass (see :meth:`new`) from an input file that must contain either a Python-dictionary or an OpenFOAM-style dictionary, see :meth:`~quadmompy.core.io.parse_setup`.
+        Create new instance of a Qbmm subclass (see :meth:`new`) from an input
+        file that must contain either a Python-dictionary or an OpenFOAM-style
+        dictionary, see :meth:`~quadmompy.core.io.parse_setup`.
 
         Parameters
         ----------
@@ -131,7 +138,7 @@ class Qbmm(metaclass=abc.ABCMeta):
         """
         return cls.from_dict(parse_setup(filename))
 
-    def __call__(self, mom):
+    def __call__(self, mom, **kwargs):
         """
         Alternative way to call the method :meth:`moment_inversion`.
 
