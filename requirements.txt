@@ -1,4 +1,4 @@
-# Required packages
+# Required packages (reduced to the essential ones)
 numpy==1.21.5
 numpydoc==1.2
 pytest==6.2.5
