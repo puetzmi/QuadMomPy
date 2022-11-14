@@ -17,7 +17,9 @@
 """
 QuadMomPy Moments
 -----------------
-Useful operations and functions concerning moments, e.g. moments of special distributions and transformations of moments, canonical moments, orthogonal polynomials and related quantities.
+Useful operations and functions concerning moments, e.g. moments of special
+distributions and transformations of moments, canonical moments, orthogonal
+polynomials and related quantities.
 
 """
 from . import transform

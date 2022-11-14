@@ -23,7 +23,7 @@ from quadmompy.moments.transform import rc2mom
 
 
 # TODO: Correct Hamburger moment sequence (particularly important for GaG-CQMOM)
-def correct_hamburger(mom, rc=None, inv=None):
+def correct_hamburger(mom, rc=None, inv=None):                                      #pylint:disable=all
     r"""
     Correct unrealizable Hamburger moment sequence by modifying first negative recurrence coefficient :math:`\beta` and computing the corresponding moments.
 

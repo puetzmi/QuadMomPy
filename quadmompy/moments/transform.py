@@ -13,6 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+"""
+Transformations involving ordinary moments, canonical moments, orthogonal
+polynomials etc.
+
+"""
 
 import numpy as np
 from scipy.special import binom
@@ -21,7 +26,8 @@ from quadmompy.core.hankel import hankel_det
 
 def linear_transform(mom, a, b):
     """
-    Linear moment transformation, i.e. computation of the moments of a random variable t = a*x + b given the moments of x.
+    Linear moment transformation, i.e. computation of the moments of a random
+    variable t = a*x + b given the moments of x.
 
     Parameters
     ----------
@@ -44,7 +50,8 @@ def linear_transform(mom, a, b):
 
 def mom2canonmom(mom):
     """
-    Transformation of a Hausdorff moment sequence (support [0,1]) to canonical moments as reported in Ref. [:cite:label:`Dette_1997`].
+    Transformation of a Hausdorff moment sequence (support [0,1]) to canonical
+    moments as reported in Ref. [:cite:label:`Dette_1997`].
 
     Parameters
     ----------
@@ -58,7 +65,9 @@ def mom2canonmom(mom):
 
     Notes
     ----
-    It should be more efficient to use another algorithm, e.g. the Q-D-algorithm, to compute the continued-fraction coefficients zeta and subsequently the canonical moments instead of using Hankel determinants.
+    It should be more efficient to use another algorithm, e.g. the
+    Q-D-algorithm, to compute the continued-fraction coefficients zeta and
+    subsequently the canonical moments instead of using Hankel determinants.
 
     References
     ----------
@@ -79,18 +88,20 @@ def mom2canonmom(mom):
 
     # Canonical moments from Hankel determinants
     p[1] /= p[0]
-    p[2:] = h_bottom[2:-1]*h_top[:-3]/(h_bottom[1:-2]*h_top[1:-2])      # corollary 1.4.6 in Ref. [Dette_1997]
+    p[2:] = h_bottom[2:-1]*h_top[:-3] \
+                    /(h_bottom[1:-2]*h_top[1:-2])      # corollary 1.4.6 in Ref. [Dette_1997]
     return p
 
 
-def canonmom2mom(p, m0=1.):
+def canonmom2mom(canon_mom, mom0=1.):
     """
-    Transformation of a sequence of canonical moments to the corresponding Hausdorff moment sequence (support [0,1]).
+    Transformation of a sequence of canonical moments to the corresponding
+    Hausdorff moment sequence (support [0,1]).
 
     Parameters
     ----------
-    p : array
-        A valid Hausdorff moment sequence.
+    canon_mom : array
+        A valid canonical moment sequence.
     m0 : float, optional
         Zeroth ordinary moment.
 
@@ -101,10 +112,10 @@ def canonmom2mom(p, m0=1.):
 
     """
     # Compute recurrence coefficients of orthogonal polynomials
-    alpha, beta = canonmom2rc(p)
+    alpha, beta = canonmom2rc(canon_mom)
 
     # Compute moments from recurrence coefficients
-    beta[0] = m0
+    beta[0] = mom0
     mom = rc2mom(alpha, beta)
     return mom
 
@@ -123,7 +134,9 @@ def rc2ops(alpha, beta):
     Returns
     -------
     ops : array
-        Lower left triangular matrix with the nth row containing the coefficients of the monic nth-degree polynomial corresponing to the powers in ascending order.
+        Lower left triangular matrix with the nth row containing the
+        coefficients of the monic nth-degree polynomial corresponing to the
+        powers in ascending order.
 
     """
     n = len(alpha)
@@ -136,7 +149,8 @@ def rc2ops(alpha, beta):
 
 def rc2mom(alpha, beta):
     """
-    Compute set of moments given the associated recurrence coefficients of orthogonal polynomials.
+    Compute set of moments given the associated recurrence coefficients of
+    orthogonal polynomials.
 
     Parameters
     ----------
@@ -152,7 +166,9 @@ def rc2mom(alpha, beta):
 
     Notes
     ----
-    This is a quick preliminary solution. The ordinary moments should be calculated more efficiently from the recurrence coefficients by avoiding the explicit computation of orthogonal polynomials.
+    This is a quick preliminary solution. The ordinary moments should be
+    calculated more efficiently from the recurrence coefficients by avoiding the
+    explicit computation of orthogonal polynomials.
 
     References
     ----------
@@ -164,31 +180,33 @@ def rc2mom(alpha, beta):
     nmom = len(alpha) + len(beta)
     # Assemble Jacobi matrix
     n = len(beta)
-    J = np.diag(beta[1:]**0.5, -1)
-    J += J.T
+    jacobi_matrix = np.diag(beta[1:]**0.5, -1)
+    jacobi_matrix += jacobi_matrix.T
     if len(alpha) == n:
-        J += np.diag(alpha)
+        jacobi_matrix += np.diag(alpha)
     else:
         # (n-1,n-1)th element has no effect on
         # the first 2n-1 moments and is thus
         # arbitrary (here it is set to 1)
-        J += np.diag(np.append(alpha, 1))
+        jacobi_matrix += np.diag(np.append(alpha, 1))
 
     # The kth moment is the top-left element of the kth
     # matrix power of J (see Ref. [Simon_1998], p. 93)
-    Jpow = np.eye(n, dtype=beta.dtype)
+    jacobi_matrix_power = np.eye(n, dtype=beta.dtype)
     mom = np.ones(nmom, beta.dtype)
     mom[0] = beta[0]
     for k in range(nmom):
-        mom[k] *= Jpow[0,0]
-        Jpow = Jpow@J
+        mom[k] *= jacobi_matrix_power[0,0]
+        jacobi_matrix_power = jacobi_matrix_power@jacobi_matrix
 
     return mom
 
 
 def zeta2rc(zeta):
     """
-    Compute the recurrence coefficients of the orthogonal polynomials associated with a measure given the coefficients of its Stieltjes-transform's continued-fraction expansion.
+    Compute the recurrence coefficients of the orthogonal polynomials associated
+    with a measure given the coefficients of its Stieltjes-transform's
+    continued-fraction expansion.
 
     Parameters
     ----------
@@ -222,7 +240,9 @@ def zeta2rc(zeta):
 
 def rc2zeta(alpha, beta):
     """
-    Compute the continued-fraction expansion coefficients of the Stieltjes transform of a measure given the recurrence coefficients of the associated orthogonal polynomials.
+    Compute the continued-fraction expansion coefficients of the Stieltjes
+    transform of a measure given the recurrence coefficients of the associated
+    orthogonal polynomials.
 
     Parameters
     ----------
@@ -263,7 +283,8 @@ def rc2zeta(alpha, beta):
 
 def canonmom2zeta(p):
     """
-    Compute canonical moments from the continued-fraction coefficients associated with a measure with support [0,1].
+    Compute canonical moments from the continued-fraction coefficients
+    associated with a measure with support [0,1].
 
     Parameters
     ----------
@@ -294,7 +315,9 @@ def canonmom2zeta(p):
 
 def zeta2canonmom(zeta):
     """
-    Compute the canonical moments associated to a measure with support [0,1] given the coefficients of its Stieltjes-transform's continued-fraction expansion.
+    Compute the canonical moments associated to a measure with support [0,1]
+    given the coefficients of its Stieltjes-transform's continued-fraction
+    expansion.
 
     Parameters
     ----------
@@ -326,7 +349,8 @@ def zeta2canonmom(zeta):
 
 def canonmom2rc(p):
     """
-    Compute canonical moments from the recurrence coefficients of the orthogonal polynomials associated with a measure with support [0,1].
+    Compute canonical moments from the recurrence coefficients of the orthogonal
+    polynomials associated with a measure with support [0,1].
 
     Parameters
     ----------
@@ -351,7 +375,8 @@ def canonmom2rc(p):
 
 def rc2canonmom(alpha, beta):
     """
-    Compute canonical moments from the recurrence coefficients of orthogonal polynomials associated with a Hausdorff moment sequence (support [0,1]).
+    Compute canonical moments from the recurrence coefficients of orthogonal
+    polynomials associated with a Hausdorff moment sequence (support [0,1]).
 
     Parameters
     ----------

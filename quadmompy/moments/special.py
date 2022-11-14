@@ -15,13 +15,18 @@
 #
 
 """
-This module contains (ordinary, absolute, canonical) moments of special weight functions / distributions.
+This module contains (ordinary, absolute, canonical) moments of special weight
+functions / distributions.
 
 """
 import numpy as np
-from quadmompy.moments.transform import linear_transform
-from scipy.special import factorial, factorial2, hyp1f1
+from scipy.special import factorial, factorial2
+
+# For some reason PyLint complains about this although it works just fine
+from scipy.special import hyp1f1    #pylint:disable='no-name-in-module'
+
 from scipy.special import gamma as gamma_func
+from quadmompy.moments.transform import linear_transform
 
 
 def beta_moments(n, alpha, beta, canonical=False):
@@ -30,10 +35,10 @@ def beta_moments(n, alpha, beta, canonical=False):
 
     .. math::
 
-        f(x) = \\frac{\Gamma(\\alpha + \\beta) x^{\\alpha - 1} (1-x)^{\\beta - 1}}
-                      {\Gamma(\\alpha) \Gamma(\\beta)},
+        f(x) = \\frac{\\Gamma(\\alpha + \\beta) x^{\\alpha - 1} (1-x)^{\\beta - 1}}
+                      {\\Gamma(\\alpha) \\Gamma(\\beta)},
 
-    where :math:`\Gamma` is the gamma function.
+    where :math:`\\Gamma` is the gamma function.
 
     Parameters
     ----------
@@ -72,11 +77,11 @@ def beta_moments(n, alpha, beta, canonical=False):
     # Canonical moments, see Ref. [Dette_1997], Eq. (1.3.11)
     # Switch to parametrization used in Ref. [Dette_1997], see Eq. (1.3.9)
     beta, alpha = alpha - 1, beta - 1
-    p = np.ones(n)
+    canon_mom = np.ones(n)
     k = np.arange(n + 1)
-    p[2::2] = 0.5*k[2:-1:2]/(k[2:-1:2] + 1 + alpha + beta)
-    p[1::2] = (0.5*k[2::2] + beta)/(k[2::2] + alpha + beta)
-    return p
+    canon_mom[2::2] = 0.5*k[2:-1:2]/(k[2:-1:2] + 1 + alpha + beta)
+    canon_mom[1::2] = (0.5*k[2::2] + beta)/(k[2::2] + alpha + beta)
+    return canon_mom
 
 
 def uniform_moments(n, a=0., b=1., canonical=False):
@@ -112,11 +117,11 @@ def uniform_moments(n, a=0., b=1., canonical=False):
         return (b**kp1 - a**kp1)/kp1/(b-a)
 
     # Canonical moments, see Ref. [Dette_1997], Example 1.4.11
-    p = np.ones(n)
-    p[1::2] = 0.5
+    canon_mom = np.ones(n)
+    canon_mom[1::2] = 0.5
     m = np.arange(1, (n + 1)//2)
-    p[2::2] = m/(2*m + 1)
-    return p
+    canon_mom[2::2] = m/(2*m + 1)
+    return canon_mom
 
 
 def normal_moments(n, mu, sigma, central=False, absolute=False):
@@ -132,9 +137,11 @@ def normal_moments(n, mu, sigma, central=False, absolute=False):
     sigma : float
         Standard deviation of the distribution, must be positive.
     central : bool, optional
-        Specifies whether the central moments, i.e. the moments about the mean shall be computed, False by default.
+        Specifies whether the central moments, i.e. the moments about the mean
+        shall be computed, False by default.
     central : bool, optional
-        Specifies whether the absolute moments shall be computed, False by default.
+        Specifies whether the absolute moments shall be computed, False by
+        default.
 
     Returns
     -------
@@ -163,9 +170,14 @@ def normal_moments(n, mu, sigma, central=False, absolute=False):
     # Absolute moments
     if central:
         # Central absolute moments, see Ref. [Winkelbauer_2012]
-        return sigma**k * (2**k/np.pi)**0.5 * gamma_func((k + 1)*0.5)
+        return sigma**k \
+                * (2**k/np.pi)**0.5 \
+                * gamma_func((k + 1)*0.5)
     # Raw absolute moments, see Ref. [Winkelbauer_2012]
-    return sigma**k * 2**(0.5*k)/np.pi**0.5 * gamma_func((k + 1)*0.5) * hyp1f1(-0.5*k, 0.5, -0.5*(mu/sigma)**2)
+    return sigma**k \
+            * 2**(0.5*k)/np.pi**0.5 \
+            * gamma_func((k + 1)*0.5) \
+            * hyp1f1(-0.5*k, 0.5, -0.5*(mu/sigma)**2)
 
 
 def gamma_moments(n, k, theta, central=False):
@@ -175,9 +187,13 @@ def gamma_moments(n, k, theta, central=False):
     .. math::
 
         f(x) = \\frac{x^{k - 1} e^{-x/\\theta}}
-                      {\Gamma(k) \\theta^k},
+                      {\\Gamma(k) \\theta^k},
 
-    where :math:`\Gamma` is the gamma function. The central moments are computed by a linear moment transformation as no explicit formulae for the central moments are available (other than recursive formulas, see e.g. Ref. [:cite:label:`Willink_2003`], which are merely linear transforms of the non-central moments).
+    where :math:`\\Gamma` is the gamma function. The central moments are
+    computed by a linear moment transformation as no explicit formulae for the
+    central moments are available (other than recursive formulas, see e.g. Ref.
+    [:cite:label:`Willink_2003`], which are merely linear transforms of the
+    non-central moments).
 
     Parameters
     ----------
@@ -220,9 +236,9 @@ def laplace_moments(n, mu, b, central=False):
 
     .. math::
 
-        f(x) = \\frac{1}{2b} e^{-\\abs{x-\mu}/b},
+        f(x) = \\frac{1}{2b} e^{-\\abs{x-\\mu}/b},
 
-    where :math:`\mu` and :math:`b > 0` are the location and scale parameter, respectively.
+    where :math:`\\mu` and :math:`b > 0` are the location and scale parameter, respectively.
 
     Parameters
     ----------
