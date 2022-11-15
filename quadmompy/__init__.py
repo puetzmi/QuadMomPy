@@ -34,6 +34,7 @@ from .core import *
 from . import qbmm
 from . import moments
 from . import equations
+from ._version import *
 
 
 __all__ = [ \
