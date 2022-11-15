@@ -1,23 +1,63 @@
 image: python:3.10.6-slim
+
 stages:
   - build
   - test
-  - deploy
+  - publish
+
 
 build-job:
   stage: build
   before_script:
+      - apt update -y && apt install git -y
       - pip install -r requirements.txt
   script:
-    - python3 -m build > build.log
+    - python3 -m build | tee build.log
+
 
 pytest-job:
-    stage: test
-    before_script:
-        - pip install dist/$(tail -1 build.log | awk '{print $NF}')
-    script:
-        - mkdir test
-        - cp -r quadmompy/tests/ test/
-        - cd test/
-        - py.test -v > test.log
+  stage: test
+  dependecies:
+    - build
+  before_script:
+    - pip install dist/$(tail -1 build.log | awk '{print $NF}')
+  script:
+    - mkdir test
+    - cp -r quadmompy/tests/ test/
+    - cd test/
+    - py.test -v | tee test.log
 
+
+pylint-job:
+  stage: test
+  before_script:
+    - mkdir -p public/badges public/lint
+    - echo undefined > public/badges/$CI_JOB_NAME.score
+    - pip install pylint-gitlab
+  script:
+    - pylint --exit-zero --output-format=text $(find -type f -name "*.py" ! -path "**/.venv/**") | tee /tmp/pylint.txt
+    - sed -n 's/^Your code has been rated at \([-0-9.]*\)\/.*/\1/p' /tmp/pylint.txt > public/badges/$CI_JOB_NAME.score
+    - pylint --exit-zero --output-format=pylint_gitlab.GitlabCodeClimateReporter $(find -type f -name "*.py" ! -path "**/.venv/**") > codeclimate.json
+    - pylint --exit-zero --output-format=pylint_gitlab.GitlabPagesHtmlReporter $(find -type f -name "*.py" ! -path "**/.venv/**") > public/lint/index.html
+  after_script:
+    - anybadge --overwrite --label $CI_JOB_NAME --value=$(cat public/badges/$CI_JOB_NAME.score) --file=public/badges/$CI_JOB_NAME.svg 4=red 6=orange 8=yellow 10=green
+    - |
+      echo "Your score is: $(cat public/badges/$CI_JOB_NAME.score)"
+  artifacts:
+    paths:
+      - public
+    reports:
+      codequality: codeclimate.json
+    when: always
+
+
+pypi-job:
+  stage: publish
+  dependencies: build
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+  before_script: 
+    - pip install twine
+  script:
+    - twine check dist/*
+      #- twine upload dist/* -u__token__ -p$PYPI_QUADMOMPY_ACCESS_TOKEN
