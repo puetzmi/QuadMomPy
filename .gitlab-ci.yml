@@ -6,7 +6,7 @@ image: python:3.10.6-slim
 # almost unlimited runners are available)
 workflow:
   rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "main"'
 
 
 stages:
@@ -75,7 +75,7 @@ pylint-job:
 pypi-job:
   stage: publish
   rules:
-    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "master"'
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_BRANCH == "main"'
   before_script: 
     - pip install twine
   script:
