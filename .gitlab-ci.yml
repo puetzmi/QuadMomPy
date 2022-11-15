@@ -26,7 +26,7 @@ test-install-job:
     - pip install dist/$(tail -1 build.log | awk '{print $NF}')
     - mkdir .install_test
     - cd .install_test 
-    - python3 -c "from quadmompy import core; import quadmompy; print(f'The QuadMomPy version is {quadmompy.__version__}'"
+    - python3 -c "from quadmompy import core; import quadmompy; print(f'The QuadMomPy version is {quadmompy.__version__}')"
 
 
 pytest-job:
