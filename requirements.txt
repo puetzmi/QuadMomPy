@@ -5,6 +5,7 @@ pylint==2.12.2
 pylint-exit==1.2.0
 pytest==6.2.5
 scipy==1.8.0
+setuptools-scm==7.0.5
 Sphinx==4.3.2
 sphinxcontrib-bibtex==2.5.0
 sphinxcontrib-packages==1.0.1
