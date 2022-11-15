@@ -1,0 +1,23 @@
+image: python:3.19.6-slim
+stages:
+  - build
+  - test
+  - deploy
+
+build-job:
+  stage: build
+  before_script:
+      - pip install -r requirements.txt
+  script:
+    - python3 -m build > build.log
+
+pytest-job:
+    stage: test
+    before_script:
+        - pip install dist/$(tail -1 build.log | awk '{print $NF}')
+    script:
+        - mkdir test
+        - cp -r quadmompy/tests/ test/
+        - cd test/
+        - py.test -v > test.log
+
