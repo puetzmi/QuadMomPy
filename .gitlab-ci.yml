@@ -32,7 +32,7 @@ test-install-job:
 pytest-job:
   stage: test
   before_script:
-    - pip install dist/$(tail -1 build.log | awk '{print $NF}')
+    - pip install dist/$(tail -1 build.log | awk '{print $NF}')[dev]
   script:
     - mkdir test
     - cp -r quadmompy/tests/ test/
