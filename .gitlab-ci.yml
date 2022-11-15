@@ -80,4 +80,4 @@ pypi-job:
     - pip install twine
   script:
     - twine check dist/*
-      #- twine upload dist/* -u__token__ -p$PYPI_QUADMOMPY_ACCESS_TOKEN
+    - twine upload dist/* -u__token__ -p$PYPI_QUADMOMPY_ACCESS_TOKEN
