@@ -1,0 +1,44 @@
+[build-system]
+requires = [ "setuptools>=61", "setuptools_scm>=7",]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quadmompy"
+description = """Tools for moments, Gaussian quadrature, 
+                orthogonal polynomials and quadrature-
+                based moment methods for the numerical 
+                solution of spatially homogeneous 
+                population balance equations."""
+readme = "README.rst"
+classifiers = [ "Programming Language :: Python :: 3", 
+                "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)", 
+                "Operating System :: OS Independent",
+            ]
+dependencies = [ "numpy ~= 1.21.5", "scipy ~= 1.8.0",]
+dynamic = [ "version",]
+
+[[project.authors]]
+name = "Michele Puetz"
+
+[project.urls]
+Homepage = "https://gitlab.com/puetzm/quadmompy.git"
+
+[project.optional-dependencies]
+dev = [ "pytest>=6.2.5", 
+        "Sphinx==4.3.2", 
+        "sphinxcontrib-bibtex==2.5.0", 
+        "sphinxcontrib-packages==1.0.1", 
+        "pylint==2.12.2", 
+        "pylint-exit==1.2.0",]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.setuptools.packages.find]
+namespaces = false
+
+[tool.setuptools_scm]
+write_to = "quadmompy/_version.py"
