@@ -1,11 +1,15 @@
+# pylint: disable=import-outside-toplevel
 """
 Test of the `quadmom.equations`-subpackage
 """
-import pytest
 
-def test_steady_fokker_planck():
+def test_steady_fokker_planck():    # pylint:disable=too-many-locals
     """
-    This test makes sure that the results in Ref. [:cite:label:`Puetz_2022`] (Case 3) are reproduced. For simplicity, the setup with 6-moment GaG-QMOM and the standard RKSSP2 scheme is used, where the results should be exact. For additional information, see the `examples`-directory where the same case is used.
+    This test makes sure that the results in Ref. [:cite:label:`Puetz_2022`]
+    (Case 3) are reproduced. For simplicity, the setup with 6-moment GaG-QMOM
+    and the standard RKSSP2 scheme is used, where the results should be exact.
+    For additional information, see the `examples`-directory where the same case
+    is used.
 
     References
     ----------
@@ -45,7 +49,7 @@ def test_steady_fokker_planck():
                             integrate=integrate \
                         )
 
-    mom, t = fpe.solve( \
+    mom, _ = fpe.solve( \
                         mom0=mom0, \
                         t=tspan, \
                         dt=dt, \

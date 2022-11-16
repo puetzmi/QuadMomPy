@@ -1,8 +1,8 @@
+# pylint: disable=import-outside-toplevel
 """
 Tests of the Qbmm-module.
 
 """
-import pytest
 
 def test_qbmm():
     """
@@ -11,8 +11,6 @@ def test_qbmm():
     """
     import numpy as np
     from quadmompy import qbmm
-    from quadmompy.qbmm.univariate import Qmom
-    from quadmompy.qbmm.multivariate import ConditionalQmom
 
     mom = np.genfromtxt("test_moments.dat")
 
@@ -36,4 +34,4 @@ def test_qbmm():
     qbmm_obj = qbmm.from_file("setup_dict_cqmom")
     quad = qbmm_obj.moment_inversion(mom)
     xi2, w2 = quad.xi, quad.w
-    assert(np.all(x1 == x2) and np.all(w1 == w2))
+    assert(np.all(xi1 == xi2) and np.all(w1 == w2))

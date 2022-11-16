@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,too-many-locals
 """
 Tests of different QMOM-types.
 
@@ -5,10 +6,13 @@ Tests of different QMOM-types.
 import pytest
 
 
-@pytest.mark.parametrize("n_delta,n_nodes", [(i,j) for i in range(2,7) for j in range(2,7) if j >= i])
-def test_qmom_std(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
+@pytest.mark.parametrize(
+    "n_delta,n_nodes", [(i,j) for i in range(2,7) for j in range(2,7) if j >= i]
+)
+def test_qmom_std(n_delta, n_nodes, x_range=(-1, 1)):
     """
-    Basic test of the standard quadrature method of moments (QMOM) using moments of weighted sums of Dirac-Delta densities.
+    Basic test of the standard quadrature method of moments (QMOM) using moments
+    of weighted sums of Dirac-Delta densities.
 
     Parameters
     ----------
@@ -23,11 +27,8 @@ def test_qmom_std(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
     import numpy as np
     from quadmompy import qbmm
 
-    if random_seed is None:
-        random_seed = pytest.random_seed
-
     # Generate test data
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     x = np.sort(rng.uniform(low=x_range[0], high=x_range[1], size=n_delta))
     w = rng.uniform(size=n_delta)
     n_moments = 2*n_nodes
@@ -51,10 +52,14 @@ def test_qmom_std(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
     assert np.allclose(w1_reduced, w) and np.allclose(x1_reduced, x)
 
 
-@pytest.mark.parametrize("n_delta,n_nodes", [(i,j) for i in range(2,7) for j in range(2,7) if j >= i])
-def test_qmom_radau(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
+@pytest.mark.parametrize(
+    "n_delta,n_nodes", [(i,j) for i in range(2,7) for j in range(2,7) if j >= i]
+)
+def test_qmom_radau(n_delta, n_nodes, x_range=(-1, 1)):
     """
-    Basic test of the standard quadrature method of moments (QMOM) with Gauss-Radau quadrature, using moments of weighted sums of Dirac-Delta densities.
+    Basic test of the standard quadrature method of moments (QMOM) with
+    Gauss-Radau quadrature, using moments of weighted sums of Dirac-Delta
+    densities.
 
     Parameters
     ----------
@@ -69,11 +74,8 @@ def test_qmom_radau(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
     import numpy as np
     from quadmompy import qbmm
 
-    if random_seed is None:
-        random_seed = pytest.random_seed
-
     # Generate test data
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     x = np.sort(rng.uniform(low=x_range[0], high=x_range[1], size=n_delta))
     w = rng.uniform(size=n_delta)
     n_moments = 2*n_nodes - 1
@@ -106,14 +108,17 @@ def test_qmom_radau(n_delta, n_nodes, x_range=(-1, 1), random_seed=None):
 
 
 @pytest.mark.parametrize("n_nodes_lower", range(1,10))
-def test_gag_qmom(n_nodes_lower, x_range=(-1, 1), random_seed=None):
+def test_gag_qmom(n_nodes_lower, x_range=(-1, 1)):
     """
-    Basic test of the Gauss/anti-Gauss quadrature method of moments (GaG-QMOM), using moments of weighted sums of Dirac-Delta densities.
+    Basic test of the Gauss/anti-Gauss quadrature method of moments (GaG-QMOM),
+    using moments of weighted sums of Dirac-Delta densities.
 
     Parameters
     ----------
     n_nodes : int
-        Number of nodes of the lower-order Gaussian quadrature. The Anti-Gaussian nodes are then `n_nodes + 1` and the total number `2*n_nodes + 1`.
+        Number of nodes of the lower-order Gaussian quadrature. The
+        Anti-Gaussian nodes are then `n_nodes + 1` and the total number
+        `2*n_nodes + 1`.
     x_range : tuple
         Limits of the location of Dirac-Delta functions.
 
@@ -124,11 +129,8 @@ def test_gag_qmom(n_nodes_lower, x_range=(-1, 1), random_seed=None):
     # Number of Dirac-Delta peaks
     n_delta = 10
 
-    if random_seed is None:
-        random_seed = pytest.random_seed
-
     # Generate test data
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     x = np.sort(rng.uniform(low=x_range[0], high=x_range[1], size=n_delta))
     w = rng.uniform(size=n_delta)
     n = n_nodes_lower

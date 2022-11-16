@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-locals
 """
 Tests of different EQMOM-types.
 
@@ -5,14 +6,18 @@ Tests of different EQMOM-types.
 import pytest
 
 
-def _test_eqmom(mom, sigma, support, qbmm_setup, sig_atol, sig_rtol, m_rtol, rng):
+def _test_eqmom(
+    mom, sigma, support, qbmm_setup, sig_atol, sig_rtol, m_rtol, rng    # pylint:disable=unused-argument
+):
     """
     Function performing the common KDF-independent steps of all EQMOM-tests.
 
     Parameters
     ----------
     mom : array
-        Set of moments as the basis for computation and reference. In order to check correctness of the reconstructed moments, one additional moment must be provided, e.g. 8 moments are needed to test the 3-node EQMOM.
+        Set of moments as the basis for computation and reference. In order to
+        check correctness of the reconstructed moments, one additional moment
+        must be provided, e.g. 8 moments are needed to test the 3-node EQMOM.
     sigma : float
         EQMOM parameter used to compute the input moments.
     support : tuple
@@ -24,7 +29,8 @@ def _test_eqmom(mom, sigma, support, qbmm_setup, sig_atol, sig_rtol, m_rtol, rng
     sig_rtol : float
         Relative tolerance used to find sigma in EQMOM algorithm.
     m_rtol : float
-        Relative tolerance used for comparison of original and reconstructed moments.
+        Relative tolerance used for comparison of original and reconstructed
+        moments.
     rng : `numpy.random.Generator`
         Random number generator.
 
@@ -48,7 +54,9 @@ def _test_eqmom(mom, sigma, support, qbmm_setup, sig_atol, sig_rtol, m_rtol, rng
 
     # Check correctness of NDF using numerical quadrature
     nsub = 200              # Maximum number of subdivisions
-    mom_num = [quad(lambda x, k: x**k*eqmom.ndf(x), *support, limit=nsub, args=(k,))[0] for k in range(nmom)]
+    mom_num = [quad(lambda x, k: x**k*eqmom.ndf(x), *support, limit=nsub, args=(k,))[0]
+               for k in range(nmom)
+            ]
     assert np.allclose(mom, mom_num)
 
     # Check if second quadrature works with float xi_first
@@ -61,7 +69,7 @@ def _test_eqmom(mom, sigma, support, qbmm_setup, sig_atol, sig_rtol, m_rtol, rng
 
 
 @pytest.mark.parametrize("nmom", [3, 5, 7, 9])
-def test_gaussian_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed=None):
+def test_gaussian_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6):
     """
     Test of the extended quadrature method of moments (EQMOM) with Gaussian KDFs.
 
@@ -79,19 +87,14 @@ def test_gaussian_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_
     """
     import numpy as np
     from quadmompy.moments.special import normal_moments
-    from quadmompy import qbmm
-    from scipy.integrate import quad
 
     # Parameters
     mu_abs_max = 10.
     sigma_max = 3.
 
-    if random_seed is None:
-        random_seed = pytest.random_seed
-
     # Generate test data
     n_alpha = (nmom - 1)//2
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint: disable=no-member
     mu = np.sort(-mu_abs_max + 2*mu_abs_max*rng.uniform(size=n_alpha))
     sigma = sigma_max*rng.uniform()
     weights = rng.uniform(size=n_alpha)
@@ -118,7 +121,7 @@ def test_gaussian_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_
 
 
 @pytest.mark.parametrize("nmom", [3, 5, 7, 9])
-def test_laplace_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed=None):
+def test_laplace_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6):
     """
     Test of the extended quadrature method of moments (EQMOM) with Laplace-KDFs.
 
@@ -136,19 +139,14 @@ def test_laplace_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_s
     """
     import numpy as np
     from quadmompy.moments.special import laplace_moments
-    from quadmompy import qbmm
-    from scipy.integrate import quad
 
     # Parameters
     mu_abs_max = 10.
     sigma_max = 3.
 
-    if random_seed is None:
-        random_seed = pytest.random_seed
-
     # Generate test data
     n_alpha = (nmom - 1)//2
-    rng = np.random.default_rng(random_seed)
+    rng = np.random.default_rng(pytest.random_seed) #pylint:disable=no-member
     mu = np.sort(rng.uniform(low=-mu_abs_max, high=mu_abs_max, size=n_alpha))
     sigma = sigma_max*rng.uniform()
     weights = rng.uniform(size=n_alpha)
@@ -193,15 +191,13 @@ def test_gamma_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_see
     """
     import numpy as np
     from quadmompy.moments.special import gamma_moments
-    from quadmompy import qbmm
-    from scipy.integrate import quad
 
     # Parameters
     mu_max = 10.
     sigma_max = 3.
 
     if random_seed is None:
-        random_seed = pytest.random_seed
+        random_seed = pytest.random_seed    # pylint:disable=no-member
 
     # Generate test data
     n_alpha = (nmom - 1)//2
@@ -252,8 +248,6 @@ def test_beta_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed
     """
     import numpy as np
     from quadmompy.moments.special import beta_moments
-    from quadmompy import qbmm
-    from scipy.integrate import quad
 
     # Parameters
     a = 0.
@@ -261,7 +255,7 @@ def test_beta_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed
     sigma_max = 3.
 
     if random_seed is None:
-        random_seed = pytest.random_seed
+        random_seed = pytest.random_seed    # pylint:disable=no-member
 
     # Generate test data
     n_alpha = (nmom - 1)//2
@@ -270,7 +264,9 @@ def test_beta_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed
     sigma = sigma_max*rng.uniform()
     weights = rng.uniform(size=n_alpha)
     weights /= sum(weights)
-    mom_orig = np.array([beta_moments(nmom, alpha=mu[i]/sigma, beta=(1 - mu[i])/sigma) for i in range(n_alpha)])
+    mom_orig = np.array([
+        beta_moments(nmom, alpha=mu[i]/sigma, beta=(1 - mu[i])/sigma) for i in range(n_alpha)
+    ])
     mom_orig = mom_orig.T@weights
     # Setup EQMOM
     setup = { \
@@ -288,4 +284,6 @@ def test_beta_eqmom(nmom, sig_atol=1e-8, sig_rtol=1e-6, m_rtol=1e-6, random_seed
             }
 
     # Run test
-    _test_eqmom(mom_orig, sigma, setup['qbmm_setup']['bounds'], setup, sig_atol, sig_rtol, m_rtol, rng)
+    _test_eqmom(mom_orig, sigma, setup['qbmm_setup']['bounds'],
+                setup, sig_atol, sig_rtol, m_rtol, rng
+            )

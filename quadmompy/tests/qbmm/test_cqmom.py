@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 """
 Test module for the conditional quadrature of moments (CQMOM).
 
@@ -5,9 +6,12 @@ Test module for the conditional quadrature of moments (CQMOM).
 import pytest
 
 @pytest.mark.parametrize("ndims", range(2, 5))
-def test_cqmom(ndims, random_seed=None):
+def test_cqmom(ndims, random_seed=None):    # pylint: disable=too-many-locals
     """
-    Test of the CQMOM that is carried out by simply constructing a conditional quadrature from pseudo-random numbers, computing the moments of the multidimensional Dirac-Delta distribution and checking if the CQMOM results are close to the original data.
+    Test of the CQMOM that is carried out by simply constructing a conditional
+    quadrature from pseudo-random numbers, computing the moments of the
+    multidimensional Dirac-Delta distribution and checking if the CQMOM results
+    are close to the original data.
 
     Parameters
     ----------
@@ -23,7 +27,7 @@ def test_cqmom(ndims, random_seed=None):
     rtol = 1e-6
 
     if random_seed is None:
-        random_seed = pytest.random_seed
+        random_seed = pytest.random_seed    # pylint: disable=no-member
 
     rng = np.random.default_rng(random_seed)
     n_nodes = [3, 3, 2, 2]
@@ -34,7 +38,7 @@ def test_cqmom(ndims, random_seed=None):
     setup = {'n_dims': ndims, \
              'qbmm_type': 'CQMOM', \
              'qbmm_setup': {'config1d': []}}
-    for idim in range(ndims):
+    for _ in range(ndims):
         setup['qbmm_setup']['config1d'].append( \
                 {'qbmm_type': 'QMOM', \
                  'qbmm_setup': \
@@ -47,7 +51,7 @@ def test_cqmom(ndims, random_seed=None):
 
     quad = ConditionalQuadrature.empty(n_nodes)
     for i,nn in enumerate(n_nodes):
-        nodes_dim = [[j for j in range(n)] for n in n_nodes[:i]]
+        nodes_dim = [list(range(n)) for n in n_nodes[:i]]
         nodes_dim = list(itprod(*nodes_dim))
         nodes_dim = [(i,) + el for el in nodes_dim]
         for nd in nodes_dim:
@@ -55,7 +59,7 @@ def test_cqmom(ndims, random_seed=None):
             quad.w_cond[nd] = np.sort(rng.uniform(size=nn))
             quad.w_cond[nd] /= sum(quad.w_cond[nd])
     quad.update()
-    size = tuple([n*2 for n in n_nodes])
+    size = tuple(n*2 for n in n_nodes)
     mom = np.zeros(size)
     mom_orders = list(np.ndindex(mom.shape))
     for mo in mom_orders:
@@ -69,4 +73,4 @@ def test_cqmom(ndims, random_seed=None):
             err_max[0] = abs((mom_rec[mo] - mom[mo])/mom[mo])
             err_max[1] = mo
 
-    assert(err_max[0] < rtol)
+    assert err_max[0] < rtol

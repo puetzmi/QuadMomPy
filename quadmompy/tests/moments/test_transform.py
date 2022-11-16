@@ -1,10 +1,11 @@
+# pylint: disable=import-outside-toplevel
 """
-Test of quadmompy.moments.transform-module.
+Test of `moments.transform` module.
 
 """
 import pytest
 
-@pytest.mark.parametrize("nmom", [i for i in range(2, 22, 2)])
+@pytest.mark.parametrize("nmom", list(range(2, 22, 2)))
 def test_linear_transform(nmom):
     """
     Test linear moment transformation with weighted sum of Dirac-Delta functions.
@@ -17,9 +18,11 @@ def test_linear_transform(nmom):
     """
     import numpy as np
     from quadmompy.moments.transform import linear_transform
-    rng = np.random.default_rng(pytest.random_seed)       # pseudo-random number generator
+
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
+
     a, b = rng.normal(size=2)               # scaling and shifting
-    x = rng.normal(size=nmom)               # original normally distributed r.v.; size must be at least nmom//2
+    x = rng.normal(size=nmom)               # original normally distributed r.v.
     w = rng.uniform(size=nmom)              # uniformly distributed weights
     w /= sum(w)                             # make density a regular pdf
     V = np.vander(x, nmom)[:,::-1]          # original Vandermonde matrix
@@ -27,13 +30,14 @@ def test_linear_transform(nmom):
     t = a*x + b                             # transformed r.v.
     V = np.vander(t, nmom)[:,::-1]          # transformed Vandermonde matrix
     mu_trans = V.T@w                        # transformed moments
-    assert(np.allclose(linear_transform(mu_orig, a, b), mu_trans))
+    assert np.allclose(linear_transform(mu_orig, a, b), mu_trans)
 
 
-@pytest.mark.parametrize("nmom", [i for i in range(2, 9)])
+@pytest.mark.parametrize("nmom", list(range(2, 9)))
 def test_mom_canonmom(nmom):
     """
-    Test conversion of ordinary to canonical moments and vice versa using Beta-distribution, see Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
+    Test conversion of ordinary to canonical moments and vice versa using
+    Beta-distribution, see Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
 
     Parameters
     ----------
@@ -52,7 +56,7 @@ def test_mom_canonmom(nmom):
     from quadmompy.moments.special import beta_moments
 
     # Generate random parameters
-    rng = np.random.default_rng(pytest.random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     a, b = rng.uniform(size=2)
 
     # Reference set of moments and canonical moments
@@ -61,17 +65,18 @@ def test_mom_canonmom(nmom):
 
     # Test transformation of ordinary moments -> canonical moments
     p = mom2canonmom(mref)
-    assert(np.allclose(p, pref))
+    assert np.allclose(p, pref)
 
     # Test transformation of canonical moments -> ordinary moments
     m = canonmom2mom(pref)
-    assert(np.allclose(m, mref))
+    assert np.allclose(m, mref)
 
 
-@pytest.mark.parametrize("nmom", [i for i in range(2, 9)])
-def test_rc_canonmom(nmom):
+@pytest.mark.parametrize("nmom", list(range(2, 9)))
+def test_rc_canonmom(nmom): # pylint: disable=too-many-locals
     """
-    Test conversion of recurrence coefficients to canonical moments and vice versa using Beta distribution.
+    Test conversion of recurrence coefficients to canonical moments and vice
+    versa using Beta distribution.
 
     Parameters
     ----------
@@ -88,15 +93,13 @@ def test_rc_canonmom(nmom):
     import numpy as np
     from quadmompy.moments.transform import rc2canonmom, canonmom2rc
     from quadmompy.moments.special import beta_moments
-    from scipy.special import gamma as gamma_func
 
     # Generate random parameters
-    rng = np.random.default_rng(pytest.random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     a, b = rng.uniform(size=2)
 
     # Compute canonical moments
     pref = beta_moments(nmom, a, b, canonical=True)
-    mref = beta_moments(nmom, a, b, canonical=False)
 
     # Compute recurrence coefficients resulting from Jacobi polynomials,
     # see Table 1.1 in Ref. [Gautschi_2004], with parameter substitution a_jac = b - 1,
@@ -120,18 +123,20 @@ def test_rc_canonmom(nmom):
 
     # Test computation of recurrence coefficients from canonical moments ...
     p = rc2canonmom(alpha_ref, beta_ref)
-    assert(np.allclose(p, pref))
+    assert np.allclose(p, pref)
 
     # ... and the opposite direction
     alpha, beta = canonmom2rc(pref)
-    assert(np.allclose(alpha, alpha_ref))
-    assert(np.allclose(beta, beta_ref))
+    assert np.allclose(alpha, alpha_ref)
+    assert np.allclose(beta, beta_ref)
 
 
-@pytest.mark.parametrize("nmom", [i for i in range(2,9)])
+@pytest.mark.parametrize("nmom", list(range(2,9)))
 def test_zeta_canonmom(nmom):
     """
-    Test conversion of continued-fraction coefficients to canonical moments and vice versa, using the quantities associated with the Beta distribution, see Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
+    Test conversion of continued-fraction coefficients to canonical moments and
+    vice versa, using the quantities associated with the Beta distribution, see
+    Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
 
     Parameters
     ----------
@@ -147,17 +152,17 @@ def test_zeta_canonmom(nmom):
     """
     import numpy as np
     from quadmompy.moments.transform import zeta2canonmom, canonmom2zeta
-    from quadmompy.moments.transform import canonmom2mom
     from quadmompy.moments.special import beta_moments
 
     # Generate random parameters
-    rng = np.random.default_rng(pytest.random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     a, b = rng.uniform(size=2)
 
     # Compute reference set of canonical moments
     pref = beta_moments(nmom, a, b, canonical=True)
 
-    # Continued fraction coefficients associated with a Beta distribution, see Eq. (1.5.10) in Ref. [Dette_1997]
+    # Continued fraction coefficients associated with a Beta distribution, see
+    # Eq. (1.5.10) in Ref. [Dette_1997]
     a, b = b - 1, a - 1     # parametrization in Ref. [Dette_1997]
     zeta_ref = np.zeros(nmom)
     n = nmom//2
@@ -175,17 +180,19 @@ def test_zeta_canonmom(nmom):
 
     # Test computation of continued-fraction coefficients from canonical moments ...
     p = zeta2canonmom(zeta_ref)
-    assert(np.allclose(p, pref))
+    assert np.allclose(p, pref)
 
     # ... and the opposite direction
     zeta = canonmom2zeta(pref)
-    assert(np.allclose(zeta, zeta_ref))
+    assert np.allclose(zeta, zeta_ref)
 
 
-@pytest.mark.parametrize("n", [i for i in range(2,9)])
-def test_zeta_rc(n):
+@pytest.mark.parametrize("n", list(range(2,9)))
+def test_zeta_rc(n):    # pylint: disable=too-many-locals
     """
-    Test conversion of recurrence coefficients of orthogonal polynomials to continued-fraction coefficients and vice versa, using the Beta distribution, see Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
+    Test conversion of recurrence coefficients of orthogonal polynomials to
+    continued-fraction coefficients and vice versa, using the Beta distribution,
+    see Example 1.5.3 in Ref. [:cite:label:`Dette_1997`].
 
     Parameters
     ----------
@@ -205,10 +212,11 @@ def test_zeta_rc(n):
     from quadmompy.moments.transform import zeta2rc, rc2zeta
 
     # Generate random parameters
-    rng = np.random.default_rng(pytest.random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     a_, b_ = rng.uniform(size=2)
 
-    # Continued fraction coefficients associated with a Beta distribution, see Eq. (1.5.10) in Ref. [Dette_1997]
+    # Continued fraction coefficients associated with a Beta distribution, see
+    # Eq. (1.5.10) in Ref. [Dette_1997]
     a, b = b_ - 1, a_ - 1     # parametrization in Ref. [Dette_1997]
     zeta_ref = np.zeros(n)
     n2 = n//2
@@ -247,18 +255,20 @@ def test_zeta_rc(n):
 
     # Test computation of recurrence coefficients from continued-fraction coefficients...
     alpha, beta = zeta2rc(zeta_ref)
-    assert(np.allclose(alpha, alpha_ref))
-    assert(np.allclose(beta, beta_ref))
+    assert np.allclose(alpha, alpha_ref)
+    assert np.allclose(beta, beta_ref)
 
     # ... and the opposite direction
     zeta = rc2zeta(alpha_ref, beta_ref)
-    assert(np.allclose(zeta, zeta_ref))
+    assert np.allclose(zeta, zeta_ref)
 
 
-@pytest.mark.parametrize("nmom", [i for i in range(2, 9)])
-def test_rc2mom(nmom):
+@pytest.mark.parametrize("nmom", list(range(2, 9)))
+def test_rc2mom(nmom):  # pylint: disable=too-many-locals
     """
-    Test computation of moments from the associated recurrence coefficients of orthogonal polynomials, essentially a 'reverse moment inversion', using a Beta distribution
+    Test computation of moments from the associated recurrence coefficients of
+    orthogonal polynomials, essentially a 'reverse moment inversion', using a
+    Beta distribution
 
     Parameters
     ----------
@@ -274,11 +284,10 @@ def test_rc2mom(nmom):
     """
     import numpy as np
     from quadmompy.moments.special import beta_moments
-    from scipy.special import gamma as gamma_func
     from quadmompy.moments.transform import rc2mom
 
     # Generate random parameters
-    rng = np.random.default_rng(pytest.random_seed)
+    rng = np.random.default_rng(pytest.random_seed) # pylint:disable=no-member
     a, b = rng.uniform(size=2)
 
     # Compute canonical moments
@@ -308,13 +317,15 @@ def test_rc2mom(nmom):
     m = rc2mom(alpha_ref, beta_ref)
 
     # Check against analytical moments
-    assert(np.allclose(m, mref))
+    assert np.allclose(m, mref)
 
 
-@pytest.mark.parametrize("n", [i for i in range(2, 9)])
+@pytest.mark.parametrize("n", list(range(2, 9)))
 def test_rc2ops(n):
     """
-    Test computation of orthogonal polynomial system from recurrence coefficients using the shifted Legendre polynomials, see Table 1.1 in Ref. [:cite:label:`Gautschi_2004`].
+    Test computation of orthogonal polynomial system from recurrence
+    coefficients using the shifted Legendre polynomials, see Table 1.1 in Ref.
+    [:cite:label:`Gautschi_2004`].
 
     Parameters
     ----------
@@ -345,4 +356,4 @@ def test_rc2ops(n):
     # Compute OPS using the `rc2ops`-function and compare
     # coefficients of nth-degree polynomial against reference
     pc = rc2ops(alpha, beta)
-    assert(np.allclose(pc[-1], pc_ref))
+    assert np.allclose(pc[-1], pc_ref)

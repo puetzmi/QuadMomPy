@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel,too-many-locals
 """
 This module contains test routines that are identical for different tests,
 
@@ -6,7 +7,9 @@ import pytest
 
 def _test_std(nmom, inv_type, inv_setup, x_range):
     """
-    Test standard inversion, i.e. the computation of a Gauss quadrature or the corresponding recurrence coefficients of orthogonal polynomials using an algorithm that is provided as parameter.
+    Test standard inversion, i.e. the computation of a Gauss quadrature or the
+    corresponding recurrence coefficients of orthogonal polynomials using an
+    algorithm that is provided as parameter.
 
     Parameters
     ----------
@@ -15,7 +18,8 @@ def _test_std(nmom, inv_type, inv_setup, x_range):
     inv_type : type
         Subtype of `MomentInversion` that is  shall be tested.
     inv_setup : dict
-        Setup dictionary with necessary parameters to initialize the selected algorithm.
+        Setup dictionary with necessary parameters to initialize the selected
+        algorithm.
     x_range : tuple
         Lower and upper bound for locations of quadrature nodes.
 
@@ -33,17 +37,19 @@ def _test_std(nmom, inv_type, inv_setup, x_range):
 
     # Moment inversion and check against original data
     xi, w = inv(moments)
-    assert (np.allclose(xi0, xi) and np.allclose(w0, w))
+    assert np.allclose(xi0, xi) and np.allclose(w0, w)
 
     # Test for odd number of moments
     if nmom > 2:
         a, b = inv.recurrence_coeffs(moments[:-1])
-        assert(len(b) == len(a) + 1)
+        assert len(b) == len(a) + 1
 
 
 def _test_radau(inv_type, n_delta, n_nodes, inv_setup, x_range):
     """
-    Test computation of Gauss-Radau quadrature with provided inversion algorithm using a weighted sum of Dirac-delta-densities and the Gauss-Radau-Laguerre formula from Example 3.5 in Ref. [:cite:label:`Gautschi_2004`].
+    Test computation of Gauss-Radau quadrature with provided inversion algorithm
+    using a weighted sum of Dirac-delta-densities and the Gauss-Radau-Laguerre
+    formula from Example 3.5 in Ref. [:cite:label:`Gautschi_2004`].
 
     Parameters
     ----------
@@ -54,7 +60,8 @@ def _test_radau(inv_type, n_delta, n_nodes, inv_setup, x_range):
     inv_type : type
         Subtype of `MomentInversion` that is  shall be tested.
     inv_setup : dict
-        Setup dictionary with necessary parameters to initialize the selected algorithm.
+        Setup dictionary with necessary parameters to initialize the selected
+        algorithm.
     x_range : tuple
         Lower and upper bound for locations of quadrature nodes.
 
@@ -83,21 +90,25 @@ def _test_radau(inv_type, n_delta, n_nodes, inv_setup, x_range):
     inv_setup["radau_node"] = x0
     inv = inv_type(**inv_setup)
     x1, w1 = inv(moments)
-    assert(len(x1) == n_nodes)
+    assert len(x1) == n_nodes
     assert np.any(np.isclose(x1, x0))
     moments_r = np.array([np.dot(w1, x1**k) for k in range(nmom)])
 
 
-    # Test case 2: Gauss-Radau quadrature for generalized Laguerre measure, see Example 3.5 in Ref. [Gautschi_2004]. Test for the "normal" case where the fixed node is the lower boundary of the support, i.e. x0=0, as well as an arbitrary positive value
+    # Test case 2: Gauss-Radau quadrature for generalized Laguerre measure, see
+    # Example 3.5 in Ref. [Gautschi_2004]. Test for the "normal" case where the
+    # fixed node is the lower boundary of the support, i.e. x0=0, as well as an
+    # arbitrary positive value
     alpha = rng.lognormal() + 1
     #alpha = 0.
     for x0 in [0., rng.gamma(alpha)]:
         inv.radau_node = x0
 
-        # Moments of the Laguerre weight are proportional to moments of the Gamma-distribution with
-        # shape parameter k = alpha + 1 and scale parameter theta = 1. The factor of proportionality is
-        # the integral of the Laguerre weight function, see 'recurrence coefficient' beta[0]=Gamma(1+alpha)
-        # in Table 1.1, Ref. [Gautschi_2004].
+        # Moments of the Laguerre weight are proportional to moments of the
+        # Gamma-distribution with shape parameter k = alpha + 1 and scale
+        # parameter theta = 1. The factor of proportionality is the integral of
+        # the Laguerre weight function, see 'recurrence coefficient'
+        # beta[0]=Gamma(1+alpha) in Table 1.1, Ref. [Gautschi_2004].
         mom = gamma_func(1 + alpha)*gamma_moments(nmom, k=alpha+1, theta=1)
 
         # Recurrence coefficents (reference values)
@@ -108,23 +119,27 @@ def _test_radau(inv_type, n_delta, n_nodes, inv_setup, x_range):
         a = np.ones(n_nodes)
         a[:-1] += 2*n[:-1] + alpha          # Table 1.1 in Ref. [Gautschi_2004]
         n_ = n_nodes - 1
+
+        # Example 3.5 in [Gautschi_2004]
         a[-1] = x0 - \
                 b[-1]*genlaguerre(n_- 1, alpha, monic=True)(x0) \
-              / (genlaguerre(n_, alpha, monic=True)(x0))             # Example 3.5 in [Gautschi_2004]
+              / (genlaguerre(n_, alpha, monic=True)(x0))
 
         # Computation using moment inversion
         alpha_, beta_ = inv.recurrence_coeffs(mom)
-        assert(np.allclose(alpha_, a))
-        assert(np.allclose(beta_, b))
+        assert np.allclose(alpha_, a)
+        assert np.allclose(beta_, b)
         x, w = inv.quad_from_rc(alpha_, beta_)
-        assert(np.any(np.isclose(x, x0)))
+        assert np.any(np.isclose(x, x0))
         mom_r = np.vander(x, nmom, increasing=True).T@w
-        assert(np.allclose(mom, mom_r))
+        assert np.allclose(mom, mom_r)
 
 
 def _test_lobatto(inv_type, n_nodes, inv_setup):
     """
-    Test computation of Gauss-Radau quadrature with algorithm of provided type using the Gauss-Lobatto-Jacobi formula from Example 3.8 in Ref. [:cite:label:`Gautschi_2004`].
+    Test computation of Gauss-Radau quadrature with algorithm of provided type
+    using the Gauss-Lobatto-Jacobi formula from Example 3.8 in Ref.
+    [:cite:label:`Gautschi_2004`].
 
     Parameters
     ----------
@@ -133,7 +148,8 @@ def _test_lobatto(inv_type, n_nodes, inv_setup):
     n_nodes : int
         Number of quadrature nodes, determines the number of required moments.
     inv_setup : dict
-        Setup dictionary with necessary parameters to initialize the selected algorithm.
+        Setup dictionary with necessary parameters to initialize the selected
+        algorithm.
 
     References
     ----------
@@ -192,11 +208,10 @@ def _test_lobatto(inv_type, n_nodes, inv_setup):
 
         # Computation using moment inversion
         alpha_, beta_ = inv.recurrence_coeffs(mom)
-        assert(np.allclose(alpha_, a))
-        assert(np.allclose(beta_, b))
+        assert np.allclose(alpha_, a)
+        assert np.allclose(beta_, b)
         x, w = inv.quad_from_rc(alpha_, beta_)
-        assert(np.any(np.isclose(x, ab[0])))
-        assert(np.any(np.isclose(x, ab[1])))
+        assert np.any(np.isclose(x, ab[0]))
+        assert np.any(np.isclose(x, ab[1]))
         mom_r = np.vander(x, nmom, increasing=True).T@w
-        assert(np.allclose(mom, mom_r))
-
+        assert np.allclose(mom, mom_r)
