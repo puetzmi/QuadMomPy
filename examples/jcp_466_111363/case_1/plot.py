@@ -1,3 +1,4 @@
+# pylint:disable=R0801
 """
 This script can be used to plot the results from `run.py`.
 
@@ -16,7 +17,7 @@ ref_file = "mom_ref.dat"
 # load results and reference data
 t, mom = np.genfromtxt(results_file)[:,[0, order+1]].T
 tref, ref = np.genfromtxt(ref_file)[:,[0, order+1]].T
-assert(np.allclose(t, tref))                    # making sure the times are consistent
+assert np.allclose(t, tref)     # making sure the times are consistent
 
 # Setup plot and compare
 fig = plt.figure()

@@ -22,8 +22,8 @@ fig = plt.figure()
 keys = ['u', 'l']
 ax = {key: fig.add_subplot(211 + i) for i,key in enumerate(keys)}
 ax['u'].plot(t, mom, label="Numerical solution")
-ax['u'].plot([t[0],t[-1]], [ref]*2, label="Exact solution")        # (again assuming steady solution)
-ax['u'].set_ylabel("$m_{{{0:d}}}$".format(order))
+ax['u'].plot([t[0],t[-1]], [ref]*2, label="Exact solution") # (again assuming steady solution)
+ax['u'].set_ylabel(f"$m_{{{order}}}$")
 ax['u'].legend()
 ax['l'].semilogy(t, abs(mom - ref))
 ax['l'].set_ylabel("Abs. error")

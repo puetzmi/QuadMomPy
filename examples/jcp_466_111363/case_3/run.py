@@ -1,15 +1,24 @@
 """
-Demonstration using the example of the moment equations derived from the one-dimensional Fokker-Planck equation. More precisely, this is the Case 3 in Ref. [1] (Section 5.4) using the GaG-QMOM, 6 moments and the RK2SSP-AR scheme. The other results in Ref. [1], Section 5.4, can be reproduced by varying the number of moments `nmom`, the ODE integration scheme `integrate` (`rk2ssp` or `rk2ssp_ar`) and the QMOM type `qbmm_type` in `qbmm_setup.py` (`GaGQMOM` or `QMOM`).
+Demonstration using the example of the moment equations derived from the
+one-dimensional Fokker-Planck equation. More precisely, this is the Case 3 in
+Ref. [1] (Section 5.4) using the GaG-QMOM, 6 moments and the RK2SSP-AR scheme.
+The other results in Ref. [1], Section 5.4, can be reproduced by varying the
+number of moments `nmom`, the ODE integration scheme `integrate` (`rk2ssp` or
+`rk2ssp_ar`) and the QMOM type `qbmm_type` in `qbmm_setup.py` (`GaGQMOM` or
+`QMOM`).
 
 References
 ----------
-.. [1] M. Pütz, M. Pollack, C. Hasse, M. Oevermann "A Gauss/anti-Gauss quadrature method of moments applied to population balance equations with turbulence-induced nonlinear phase-space diffusion", J. Comput. Phys. 466 (2022) 111363.
+.. [1] M. Pütz, M. Pollack, C. Hasse, M. Oevermann "A Gauss/anti-Gauss
+       quadrature method of moments applied to population balance equations with
+       turbulence-induced nonlinear phase-space diffusion", J. Comput. Phys. 466
+       (2022) 111363.
 
 """
 import numpy as np
 from quadmompy import qbmm
 from quadmompy.equations import FokkerPlanckEq1D
-from quadmompy.equations.integrate_1d import rk2ssp_ar, rk2ssp
+from quadmompy.equations.integrate_1d import rk2ssp_ar, rk2ssp  # pylint:disable=unused-import
 
 # Input filenames
 qbmm_setup_file = "qbmm_setup.py"
@@ -69,5 +78,6 @@ mom, t = fpe.solve( \
                   )
 
 # Write results to file for analysis
-header="t {0:s}".format(' '.join("mom[{0:d}]".format(k) for k in range(nmom)))
+momstr = ' '.join([f"mom[{k}]" for k in range(nmom)])
+header = f"t {momstr}"
 np.savetxt(mom_out_file, np.column_stack((t, mom)), header=header)
