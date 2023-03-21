@@ -505,7 +505,7 @@ class ExtendedQmom(UnivariateQbmm):
 
         """
         bounds = self._sigma_bounds(mom)
-        sigma = optimize.newton(self._target_function, *bounds, args=(mom,))
+        sigma = optimize.newton(self._target_function, bounds[0], args=(mom,))
         xi, w = self.inversion(self.m2ms(mom[:-1], sigma))
         return sigma, xi, w
 
@@ -1537,8 +1537,8 @@ class GammaEqmom(ExtendedQmom):
 
         """
         bounds = self._sigma_bounds(mom)
-        return ExtendedQmom.find_sigma(mom)
-        #return eqroots.pigou_stieltjes(bounds[1], bounds, mom, self.m2ms, self.ms2m, \
+        return super().find_sigma(mom)
+        #return eqroots.pigou_stieltjes(bounds[0], bounds, mom, self.m2ms, self.ms2m, \
         #    self.inversion, self.atol, self.rtol)
 
     def _init_sigma_pow(self, nmom):
