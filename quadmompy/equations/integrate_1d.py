@@ -301,6 +301,11 @@ def rk2ssp(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100,   #pyl
             dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2, dtmax,
                                             atol, rtol, fhmin, fhmax, fhsaf)
 
+            tiny = np.finfo(type(dt)).tiny
+            if dt < tiny and t + dt < tspan[-1]:
+                error = "Adaptive solver failed (step size zero)"
+                raise RuntimeError(error)
+
         # Assign updated solution
         m = m_dt.copy()
 
@@ -447,6 +452,11 @@ def rk2ssp_ar(mom, a, b, sigma, dt, tspan, inv, adaptive=False, dtmax=1e100,    
             # described in Ref. [Hairer_1993]
             dt, success = _adapt_stepsize(m, m_dt, m_dt2, dt, 2,
                                             dtmax, atol, rtol, fhmin, fhmax, fhsaf)
+
+            tiny = np.finfo(type(dt)).tiny
+            if dt < tiny and t + dt < tspan[-1]:
+                error = "Adaptive solver failed (step size zero)"
+                raise RuntimeError(error)
 
         # Assign updated solution
         m = m_dt.copy()
