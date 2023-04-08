@@ -1537,9 +1537,9 @@ class GammaEqmom(ExtendedQmom):
 
         """
         bounds = self._sigma_bounds(mom)
-        return super().find_sigma(mom)
-        #return eqroots.pigou_stieltjes(bounds[0], bounds, mom, self.m2ms, self.ms2m, \
-        #    self.inversion, self.atol, self.rtol)
+        #return super().find_sigma(mom)
+        return eqroots.pigou_stieltjes(bounds[0], bounds, mom, self.m2ms, self.ms2m, \
+            self.inversion, self.atol, self.rtol)
 
     def _init_sigma_pow(self, nmom):
         r"""
