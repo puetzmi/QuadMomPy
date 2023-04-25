@@ -21,7 +21,7 @@ import abc
 from math import sqrt, factorial
 import numpy as np
 from scipy.special import roots_hermite, roots_genlaguerre, roots_jacobi
-from scipy.linalg import toeplitz
+from scipy.linalg import toeplitz, eigh_tridiagonal
 from scipy.special import gamma as gamma_func
 
 # For some reason PyLint complains about this although it works just fine
@@ -1671,8 +1671,15 @@ class GammaEqmom(ExtendedQmom):
         xi = np.empty((n_ab, n))
         w = np.empty_like(xi)
         for j in range(n):
-            xi[:,j], w[:,j], sum_ = roots_genlaguerre(n_ab, xi_first[j]/sigma - 1, True)
-            w[:,j] /= sum_
+            #xi[:,j], w[:,j] = roots_genlaguerre(n_ab, xi_first[j]/sigma - 1)
+            alpha = xi_first[j]/sigma - 1
+            k = np.arange(n_ab)
+            d = 2*k + alpha + 1
+            e = k[1:]*(k[1:] + alpha)
+            e **= 0.5
+            xi[:,j], w_ = eigh_tridiagonal(d, e)
+            w[:,j] = w_[0]**2
+            #w[:,j] /= sum(w[:,j])
         return xi*sigma, w
 
     def _sigma_bounds(self, mom):
