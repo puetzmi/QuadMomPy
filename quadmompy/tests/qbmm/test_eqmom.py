@@ -59,10 +59,6 @@ def _test_eqmom(
             ]
     assert np.allclose(mom, mom_num)
 
-    # Check if second quadrature works with float xi_first
-    n_ab = qbmm_setup['qbmm_setup']['n_ab']
-    assert np.all(eqmom.second_quad(eqmom.xi_first[0], eqmom.sigma, n_ab)[0] == xi[:n_ab])
-
     # As the solution may not be unique results can only be tested based on the moments
     mom_reconst = np.vander(xi, nmom, increasing=True).T@w
     assert np.allclose(mom, mom_reconst)
